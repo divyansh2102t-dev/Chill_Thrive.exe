@@ -2,64 +2,95 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div className="font-sans">
+      <section>
+        <div className="flex items-center justify-center">
+          <a href="/">
+            <img
+              src="/image/chillthrive.jpg"
+              alt="Chill Thrive Logo"
+              className="w-40 mr-15"
             />
-            Deploy Now
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+          {[
+            "services",
+            "awareness",
+            "about us",
+            "contact us",
+            "events",
+            "testimonials",
+          ].map((el, i) => (
+            <span key={i} className="ml-10 text-xl font-light fill-background hover:text-[#289BD0] cursor-pointer text-gray-600">
+              <a href={`/${el}`}>{el}</a>
+            </span>
+          ))}
         </div>
-      </main>
+
+        <div className="mt-5 flex items-center justify-center mx-auto">
+          <img src="/image/icebathhero.png" alt="" className="h-100" />
+          <div className="flex flex-col ml-5">
+            <span className="text-[84px] leading-[80px]">Welcome to</span>
+            <div className="flex flex-row">
+              <span className="text-[115px] leading-[100px] text-[#289BD0]">Chill&nbsp;</span>
+              <span className="text-[115px] leading-[100px] text-[#5DB4DB]">Thrive</span>
+            </div>
+            <span className="text-[28px] mt-3 font-[400]">Where <a href="" className="underline text-[#00FF48]">Recovery</a> Meets Resilience.</span>
+            <span className="text-[22px] mt-9 font-[400]">Rejuvenate your body. <br />
+                  Reset your mind.</span>
+          </div>
+        </div>
+
+        <div className="my-12 flex justify-center text-[32px]">
+          <a className="bg-[#289BD0] text-white rounded-2xl hover:scale-105" href="">&nbsp;Book&nbsp;</a>&nbsp;a session right now
+        </div>
+      </section>
+      <section className="">
+      <br />
+        <div>
+          <div className="my-12 flex justify-center text-[44px] mb-20">
+            <a className="bg-[#289BD0] text-white rounded-2xl" href="">&nbsp;Explore Services&nbsp;</a>
+        </div>
+
+        <div className="flex justify-center flex-wrap gap-20">
+          {[
+            ["/image/blankimage.png", "Ice Bath", "fck you ice bath"],
+            ["/image/blankimage.png", "Jacuzzi", "fck you ice bath"],
+            ["/image/blankimage.png", "Steam Bath", "fck you ice bath"],
+            ["/image/blankimage.png", "Combo Therapy", "fck you ice bath"],
+          ].map((el, i) => (
+            <div className="bg-[#F9F9F9] p-8">
+              <img className="w-100 h-100 rounded-3xl" src={el[0]} alt="" />
+              <div className="">
+                <div className="flex flex-rol w-full justify-between mt-8 mb-2">
+                  <span className="text-4xl font-semibold">{el[1]}</span>
+                  <a href=""><img className="bg-[#289BD0] h-10 w-10 p-2.25 rounded-2xl" src="/image/arrow01.svg" alt="" />
+                </a></div>
+                <span className="">{el[2]}</span>
+              </div>
+            </div>
+          ))}
+          </div>
+        </div>
+      </section>
+      <section>
+        <div className="flex flex-col items-center my-20">
+          <img className="w-60" src="/image/chillthrive.jpg" alt="" />
+          <div className="flex mt-5 gap-3">
+            {[
+            ["https://www.iconpacks.net/icons/2/free-instagram-logo-icon-3497-thumb.png", "https://www.instagram.com/chill.thrive/"],
+            ["https://img.icons8.com/ios-filled/50/1A1A1A/linkedin.png", "https://www.linkedin.com/in/chill-thrive-8a911b320/"],
+          ].map((el, i) => (
+            <div className="rounded-full bg-[#e3e3e3] p-2">
+              <a target="blank" href={el[1]}><img className="h-8 w-8" src={el[0]} alt="" /></a>
+            </div>
+          ))}
+          </div>
+          <div className="mt-10">
+            <span className="block text-center">Chill Thrive, LLC | © 2026 All rights reserved. <br /> Terms & Condition Apply </span>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -54,10 +54,10 @@ export default function Home() {
 
         <div className="flex justify-center flex-wrap gap-20">
           {[
-            ["/image/blankimage.png", "Ice Bath", "fck you ice bath"],
-            ["/image/blankimage.png", "Jacuzzi", "fck you ice bath"],
-            ["/image/blankimage.png", "Steam Bath", "fck you ice bath"],
-            ["/image/blankimage.png", "Combo Therapy", "fck you ice bath"],
+            ["/image/blankimage.png", "Ice Bath", "about ice bath"],
+            ["/image/blankimage.png", "Jacuzzi", "about Jacuzzi"],
+            ["/image/blankimage.png", "Steam Bath", "about Steam Bath"],
+            ["/image/blankimage.png", "Combo Therapy", "about Combo Therapy"],
           ].map((el, i) => (
             <div className="bg-[#F9F9F9] p-8">
               <img className="w-100 h-100 rounded-3xl" src={el[0]} alt="" />

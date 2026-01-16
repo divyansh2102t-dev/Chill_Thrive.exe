@@ -11,6 +11,8 @@ import DetailsStep from "./components/DetailsStep";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
+export const dynamic = "force-dynamic";
+
 
 /* ---------------- TYPES ---------------- */
 

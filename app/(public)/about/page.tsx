@@ -2,83 +2,91 @@ import { supabase } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = {
-  title: "Cold Therapy Awareness | Chill Thrive",
-  description:
-    "Learn about cold therapy, ice bath science, recovery myths, and safety guidelines.",
+  title: "Founder | Chill Thrive",
+  description: "The story, vision, and mission behind Chill Thrive",
 };
 
-export default async function AwarenessPage() {
-  const { data } = await supabase
-    .from("awareness_content")
+export default async function FounderPage() {
+  const { data: founder } = await supabase
+    .from("founder_content")
     .select("*")
     .eq("is_active", true)
     .single();
 
-  if (!data) return null;
+  if (!founder) return null;
 
   return (
     <div className="md:w-[760px] mx-auto py-16 space-y-16">
       {/* ---------- HEADER ---------- */}
       <header className="text-center space-y-4">
-        <h1 className="text-3xl font-bold">{data.title}</h1>
-        <p className="text-gray-500 max-w-xl mx-auto">
-          Evidence-based education to help you make informed recovery decisions.
-        </p>
+        <img
+          src={founder.photo_url}
+          alt={founder.founder_name}
+          className="mx-auto w-40 h-40 rounded-full object-cover"
+        />
+        <h1 className="text-3xl font-bold">
+          {founder.founder_name}
+        </h1>
       </header>
 
-      {/* ---------- CONTENT SECTIONS ---------- */}
+      {/* ---------- FOUNDER STORY ---------- */}
       <section className="space-y-6">
+        <h2 className="text-2xl font-semibold">Founder Story</h2>
+
         <Card className="bg-white shadow-sm">
           <CardHeader>
-            <CardTitle>What is Cold Therapy?</CardTitle>
+            <CardTitle>Journey</CardTitle>
           </CardHeader>
           <CardContent className="text-gray-600">
-            {data.cold_therapy_intro}
+            {founder.story_journey}
           </CardContent>
         </Card>
 
         <Card className="bg-white shadow-sm">
           <CardHeader>
-            <CardTitle>Science Behind Ice Baths</CardTitle>
+            <CardTitle>Vision</CardTitle>
           </CardHeader>
           <CardContent className="text-gray-600">
-            {data.ice_bath_science}
+            {founder.story_vision}
           </CardContent>
         </Card>
 
         <Card className="bg-white shadow-sm">
           <CardHeader>
-            <CardTitle>Heat vs Cold Therapy</CardTitle>
+            <CardTitle>Why Chill Thrive</CardTitle>
           </CardHeader>
           <CardContent className="text-gray-600">
-            {data.heat_vs_cold}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white shadow-sm">
-          <CardHeader>
-            <CardTitle>Who Should Avoid Ice Baths</CardTitle>
-          </CardHeader>
-          <CardContent className="text-gray-600">
-            {data.who_should_avoid}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white shadow-sm">
-          <CardHeader>
-            <CardTitle>Recovery Myths & Facts</CardTitle>
-          </CardHeader>
-          <CardContent className="text-gray-600">
-            {data.myths_and_facts}
+            {founder.story_why}
           </CardContent>
         </Card>
       </section>
 
-      {/* ---------- DISCLAIMER ---------- */}
+      {/* ---------- MISSION & VALUES ---------- */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <Card className="bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle>Mission</CardTitle>
+          </CardHeader>
+          <CardContent className="text-gray-600">
+            {founder.mission}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle>Values</CardTitle>
+          </CardHeader>
+          <CardContent className="text-gray-600">
+            {founder.values}
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* ---------- QUOTE ---------- */}
       <section>
         <Card className="bg-white shadow-sm border-l-4 border-black">
-          <CardContent className="text-sm text-gray-500 py-6">
-            {data.medical_disclaimer}
+          <CardContent className="italic text-lg text-gray-700 py-8">
+            “{founder.quote}”
           </CardContent>
         </Card>
       </section>

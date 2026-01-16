@@ -1,11 +1,62 @@
-import Image from "next/image";
+"use client"
+
+import { supabase } from "@/lib/supabase/client";
+import { Service } from "@/lib/types/service";
+import { useEffect, useState } from "react";
+
+import WhyChillThrive from "./components/WhyChillThrive";
+import CallToAction from "./components/CallToAction";
+import TestimonialsPreview from "./components/TestimonialsPreview";
 
 export default function Home() {
+  const [services, setServices] = useState<Service[]>([]);
+
+useEffect(() => {
+  const fetchRandomServices = async () => {
+    const { data, error } = await supabase
+      .from("services")
+      .select("id,title,description,media_url,media_type,yt_url")
+      .eq("is_active", true);
+
+    if (error || !data) return;
+
+    // shuffle client-side
+    const shuffled = [...data].sort(() => 0.5 - Math.random());
+
+    const normalized: Service[] = shuffled.slice(0, 4).map((s) => ({
+      id: s.id,
+      slug: "", // not needed here, keep empty or remove from interface if unused
+      title: s.title,
+      type: "single", // or infer if needed
+
+      mediaUrl: s.media_url,        // ✅ FIX
+      mediaType: s.media_type,      // ✅ FIX
+      ytUrl: s.yt_url ?? undefined, // ✅ FIX
+
+      description: s.description,
+
+      durationMinutes: [],
+      benefits: [],
+
+      price: 0,
+      currency: "INR",
+
+      isActive: true,
+      createdAt: "",
+    }));
+
+    setServices(normalized);
+  };
+
+  fetchRandomServices();
+}, []);
+
+
   return (
     <section className="font-sans">
       <section>
-        <div className="mt-5 flex items-center justify-center mx-auto">
-          <img src="/image/icebathhero.png" alt="" className="h-100" />
+        <div className="mt-15 flex items-center justify-center mx-auto">
+          <img src="/image/icebathhero.png" alt="" className="h-80" />
           <div className="flex flex-col ml-5">
             <span className="text-[84px] leading-[80px]">Welcome to</span>
             <div className="flex flex-row">
@@ -19,37 +70,52 @@ export default function Home() {
         </div>
 
         <div className="my-12 flex justify-center text-[32px]">
-          <a className="bg-[#289BD0] text-white rounded-2xl hover:scale-105" href="">&nbsp;Book&nbsp;</a>&nbsp;a session right now
+          <a className="rounded-2xl underline hover:no-underline" href="/booking">Book</a>&nbsp;a session right now
         </div>
       </section>
-      <section className="">
-      <br />
+      <section className="w-[1080px] mx-auto">
+        <br />
         <div>
-          <div className="my-12 flex justify-center text-[44px] mb-20">
-            <a className="bg-[#289BD0] text-white rounded-2xl" href="">&nbsp;Explore Services&nbsp;</a>
-        </div>
+          <div className="my-12 flex text-[84px] mb-10">
+            <a className="underline hover:no-underline rounded-2xl" href="/services">Explore Services</a>
+          </div>
 
-        <div className="flex justify-center flex-wrap gap-20">
-          {[
-            ["/image/blankimage.png", "Ice Bath", "about ice bath"],
-            ["/image/blankimage.png", "Jacuzzi", "about Jacuzzi"],
-            ["/image/blankimage.png", "Steam Bath", "about Steam Bath"],
-            ["/image/blankimage.png", "Combo Therapy", "about Combo Therapy"],
-          ].map((el, i) => (
-            <div className="bg-[#F9F9F9] p-8" key={i}>
-              <img className="w-100 h-100 rounded-3xl" src={el[0]} alt="" />
-              <div className="">
-                <div className="flex flex-rol w-full justify-between mt-8 mb-2">
-                  <span className="text-4xl font-semibold">{el[1]}</span>
-                  <a href=""><img className="bg-[#289BD0] h-10 w-10 p-2.25 rounded-2xl" src="/image/arrow01.svg" alt="" />
-                </a></div>
-                <span className="">{el[2]}</span>
+          <div className="flex justify-center flex-wrap gap-20">
+            {services.map((s, i) => (
+              <div className="bg-[#F9F9F9] p-8 w-[372px]" key={s.id ?? i}>
+                <img
+                  className="w-80 h-80 rounded-3xl object-cover"
+                  src={s.mediaUrl || "/image/blankimage.png"}
+                  alt={s.title}
+                />
+
+                <div>
+                  <div className="flex flex-rol w-full justify-between mt-8 mb-2">
+                    <span className="text-3xl font-semibold">
+                      {s.title}
+                    </span>
+
+                    <a href="/services">
+                      <img
+                        className="bg-[#289BD0] h-10 w-10 p-2.25 rounded-2xl"
+                        src="/image/arrow01.svg"
+                        alt="View service"
+                      />
+                    </a>
+                  </div>
+
+                  <span className="line-clamp-3">
+                    {s.description}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
           </div>
         </div>
       </section>
+      <WhyChillThrive />
+      <TestimonialsPreview />
+      <CallToAction />
     </section>
   );
 }

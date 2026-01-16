@@ -25,9 +25,9 @@ export default function Header() {
         <div className="flex items-center justify-center">
             <a  href="/">
                 <img
-                src="/image/chilltrhive-logo.png"
+                src="/image/chillthrive-logo.png"
                 alt="Chill Thrive Logo"
-                className="w-60 mr-10"
+                className="w-15 mr-10"
                 />
             </a>
 
@@ -39,6 +39,12 @@ export default function Header() {
                 <a href={`${el.href}`}>{el.label}</a>
                 </span>
             ))}
+
+            <a className="ml-20" href="/booking">
+                <span className="font-light text-xl underline hover:no-underline">
+                    book
+                </span>
+            </a>
         </div>
     </section>
   );

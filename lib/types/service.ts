@@ -5,8 +5,10 @@ export interface Service {
   title: string;              // Ice Bath Therapy
   type: "single" | "combo";
 
-  mediaUrl: string;           // image or short video
+  mediaUrl: string;           // image URL (from media_url)
   mediaType: "image" | "video";
+
+  ytUrl?: string;             // YouTube URL (only if mediaType === "video")
 
   description: string;
 

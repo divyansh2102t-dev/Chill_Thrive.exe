@@ -1,0 +1,3 @@
+ALTER TABLE bookings
+ADD COLUMN slot_id UUID NOT NULL,
+ADD COLUMN duration_minutes INTEGER NOT NULL;

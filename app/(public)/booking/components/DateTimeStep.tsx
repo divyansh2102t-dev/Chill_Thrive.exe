@@ -32,7 +32,7 @@ export default function DateTimeStep({
   const today = new Date();
 	today.setHours(0, 0, 0, 0);
 
-	const [selectedDate, setSelectedDate] = useState<Date | null>(
+	const [selectedDate, setSelectedDate] = useState<Date | undefined>(
 	date ?? today
 	);
 
@@ -99,28 +99,27 @@ export default function DateTimeStep({
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            {slots.map((slot) => {
-              const label = `${slot.start_time.slice(0,5)} – ${slot.end_time.slice(0,5)}`;
+  {slots.map((slot) => {
+    const label = `${slot.start_time.slice(0,5)} – ${slot.end_time.slice(0,5)} (${slot.capacity})`;
 
-              const active = selectedTime === slot.id;
+    const active = selectedTime?.slotId === slot.id;
 
-              return (
-                <Button
-										key={slot.id}
-										variant={active ? "default" : "outline"}
-										onClick={() =>
-											setSelectedTime({
-												slotId: slot.id,
-												label: `${slot.start_time.slice(0,5)} – ${slot.end_time.slice(0,5)}`
-											})
-										}
-									>
-										{label}
-									</Button>
-
-              );
-            })}
-          </div>
+    return (
+      <Button
+        key={slot.id}
+        variant={active ? "default" : "outline"}
+        onClick={() =>
+          setSelectedTime({
+            slotId: slot.id,
+            label,
+          })
+        }
+      >
+        {label}
+      </Button>
+    );
+  })}
+</div>
         </div>
       </div>
 

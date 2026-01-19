@@ -40,7 +40,7 @@ export default function ServiceStep({
 
   return (
     <>
-      <h2 className="text-2xl font-semibold mb-6">Select a Service</h2>
+      <h2 className="text-2xl font-light mb-20 text-center">Select a Service</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {services.map((s) => {
@@ -51,39 +51,41 @@ export default function ServiceStep({
           return (
             <div
               key={s.id}
-              className="border rounded-lg p-4 space-y-3"
+              className="border rounded-sm p-8 space-y-3 flex flex-row justify-between"
             >
-              <p className="font-medium">{s.title}</p>
 
-              <p className="text-sm text-gray-600">
-                ₹{s.price}
-              </p>
+              <div className="flex flex-col h-full">
+                <p className="font-medium text-2xl">{s.title}</p>
 
-              {/* Duration selector */}
-              <div className="flex flex-wrap gap-2">
-                {durations.map((d) => (
-                  <Button
-                    key={d}
-                    size="sm"
-                    variant={
-                      selectedDuration === d
-                        ? "default"
-                        : "outline"
-                    }
-                    onClick={() =>
-                      setSelectedDurations((prev) => ({
-                        ...prev,
-                        [s.id]: d,
-                      }))
-                    }
-                  >
-                    {d} min
-                  </Button>
-                ))}
+                <p className="text-2xl ">
+                  ₹{s.price}
+                </p>
+                {/* Duration selector */}
+                <div className="flex flex-wrap gap-2">
+                  {durations.map((d) => (
+                    <Button
+                      key={d}
+                      size="sm"
+                      variant={
+                        selectedDuration === d
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() =>
+                        setSelectedDurations((prev) => ({
+                          ...prev,
+                          [s.id]: d,
+                        }))
+                      }
+                    >
+                      {d} min
+                    </Button>
+                  ))}
+                </div>
               </div>
 
               <Button
-                className="w-full"
+                className="h-full"
                 onClick={() =>
                   onSelect({
                     service: s,

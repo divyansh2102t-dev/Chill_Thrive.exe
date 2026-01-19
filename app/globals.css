@@ -126,10 +126,6 @@ body {
   font-family: 'Poppins', system-ui, sans-serif;
 }
 
-#header{
-  padding: 50px 0px;
-}
-
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -171,4 +167,18 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.fixed-element {
+  position: fixed;
+  top: 0; /* Positions the element at the top edge of the viewport */
+  left: 0; /* Positions the element at the left edge of the viewport */
+  width: 100%; /* Ensures it spans the full width */
+  /* Optional additional styling */
+  padding: 40px 0px;
+  z-index: 100; /* Ensures it is above all other elements */
+}
+
+#header{
+  padding: 50px 0px;
 }

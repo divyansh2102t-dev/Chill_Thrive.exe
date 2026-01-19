@@ -170,7 +170,7 @@ export default function BookingClient() {
 /* ---------------- CONFIRMATION (TERMINAL) ---------------- */
 if (confirmed) {
   return (
-    <div className="max-w-xl mx-auto py-16 px-4">
+    <div className="max-w-xl mx-auto py-16 px-4 min-h-screen">
       <div className="border rounded-lg p-6 bg-green-50 space-y-6">
         <h2 className="text-2xl font-semibold">Booking Confirmed</h2>
         <p className="text-sm text-gray-700">
@@ -294,98 +294,101 @@ if (confirmed) {
   /* ---------------- MAIN FLOW ---------------- */
 
   return (
-    <div className="relative max-w-3xl mx-auto py-12 px-4">
-      <ProgressBar step={step} total={3} />
+    <div>
+      <h1 className="text-3xl text-center py-10">Booking</h1>
+      <div className="relative max-w-3xl mx-auto py-12 px-4 min-h-screen">
+        <ProgressBar step={step} total={3} />
 
-      {/* STEP 1 */}
-      {step === 1 && !serviceIdFromUrl && (
-        <ServiceStep
-          onSelect={(data) => {
-            setSelection(data);
-            setStep(2);
-          }}
-        />
-      )}
+        {/* STEP 1 */}
+        {step === 1 && !serviceIdFromUrl && (
+          <ServiceStep
+            onSelect={(data) => {
+              setSelection(data);
+              setStep(2);
+            }}
+          />
+        )}
 
-      {/* STEP 2 */}
-      {step === 2 && selection && (
-        <DateTimeStep
-          date={date}
-          time={time}
-          onBack={() => setStep(1)}
-          onNext={(d, t) => {
-            setDate(d);
-            setTime(t);
-            setStep(3);
-          }}
-        />
-      )}
+        {/* STEP 2 */}
+        {step === 2 && selection && (
+          <DateTimeStep
+            date={date}
+            time={time}
+            onBack={() => setStep(1)}
+            onNext={(d, t) => {
+              setDate(d);
+              setTime(t);
+              setStep(3);
+            }}
+          />
+        )}
 
-      {/* STEP 3 */}
-      {step === 3 && selection && date && time && (
-        <DetailsStep
-          service={selection.service}
-          duration={selection.duration}
-          date={date}
-          time={time}
-          form={form}
-          setForm={setForm}
-          onBack={() => {
-            setTime(null); // 🔑 FIXED BACK BUG
-            setStep(2);
-          }}
-          onPricingChange={(p) => setPricing(p)}
-          onSuccess={(p) => {
-            setConfirmed({
-              service: selection.service,
-              duration: selection.duration,
-              date: date.toISOString().split("T")[0],
-              time,
-              email: form.email,
-              payment: form.payment,
-              baseAmount: p.baseAmount,
-              discountAmount: p.discountAmount,
-              finalAmount: p.finalAmount,
-              couponCode: p.couponCode,
-            });
-          }}
-        />
-      )}
+        {/* STEP 3 */}
+        {step === 3 && selection && date && time && (
+          <DetailsStep
+            service={selection.service}
+            duration={selection.duration}
+            date={date}
+            time={time}
+            form={form}
+            setForm={setForm}
+            onBack={() => {
+              setTime(null); // 🔑 FIXED BACK BUG
+              setStep(2);
+            }}
+            onPricingChange={(p) => setPricing(p)}
+            onSuccess={(p) => {
+              setConfirmed({
+                service: selection.service,
+                duration: selection.duration,
+                date: date.toISOString().split("T")[0],
+                time,
+                email: form.email,
+                payment: form.payment,
+                baseAmount: p.baseAmount,
+                discountAmount: p.discountAmount,
+                finalAmount: p.finalAmount,
+                couponCode: p.couponCode,
+              });
+            }}
+          />
+        )}
 
-      {/* ---------------- STICKY SUMMARY (RESTORED) ---------------- */}
-      {selection && step > 1 && (
-        <div className="fixed bottom-4 right-4 z-50 border bg-white rounded-lg p-4 shadow w-64 space-y-1">
-          <p className="text-sm font-medium">{selection.service.title}</p>
-          <p className="text-xs">Duration: {selection.duration} min</p>
+        {/* ---------------- STICKY SUMMARY (RESTORED) ---------------- */}
+        {selection && step > 1 && (
+          <div className="fixed bottom-4 right-4 z-50 border bg-white rounded-lg p-4 shadow w-64 space-y-1">
+            <p className="text-sm font-medium">{selection.service.title}</p>
+            <p className="text-xs">Duration: {selection.duration} min</p>
 
-          {date && (
-            <p className="text-xs">
-              Date: {date.toISOString().split("T")[0]}
-            </p>
-          )}
+            {date && (
+              <p className="text-xs">
+                Date: {date.toISOString().split("T")[0]}
+              </p>
+            )}
 
-          {time && <p className="text-xs">Time: {time.label}</p>}
+            {time && <p className="text-xs">Time: {time.label}</p>}
 
-          <div className="border-t pt-2 mt-2 text-xs space-y-1">
-            <div className="flex justify-between">
-              <span>Base</span>
-              <span>₹{pricing?.baseAmount}</span>
-            </div>
-
-            {pricing?.discountAmount ? (
-              <div className="flex justify-between text-green-700">
-                <span>Discount</span>
-                <span>-₹{pricing.discountAmount}</span>
+            <div className="border-t pt-2 mt-2 text-xs space-y-1">
+              <div className="flex justify-between">
+                <span>Base</span>
+                <span>₹{pricing?.baseAmount}</span>
               </div>
-            ) : null}
 
-            <div className="flex justify-between font-semibold">
-              <span>Payable</span>
-              <span>₹{pricing?.finalAmount}</span>
+              {pricing?.discountAmount ? (
+                <div className="flex justify-between text-green-700">
+                  <span>Discount</span>
+                  <span>-₹{pricing.discountAmount}</span>
+                </div>
+              ) : null}
+
+              <div className="flex justify-between font-semibold">
+                <span>Payable</span>
+                <span>₹{pricing?.finalAmount}</span>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

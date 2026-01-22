@@ -25,6 +25,7 @@ const reasons = [
     title: "Science-backed recovery",
     description:
       "Protocols designed using proven recovery science for real physiological benefits.",
+    color: "blue"
   },
   {
     title: "Trained professionals",
@@ -185,7 +186,7 @@ export default function Home() {
       scrollTrigger: {
         trigger: container2Ref.current,
         start: "top top",
-        end: "+=175%",      // scroll distance controls timing
+        end: "+=225%",      // scroll distance controls timing
         pin: true,          // 🔒 pinned screen
         scrub: true,        // 🔗 scroll linked
         anticipatePin: 1,
@@ -199,7 +200,7 @@ export default function Home() {
         { opacity: 1 },
         {
           opacity: 0,
-          duration: 0.8,
+          duration: 0.5,
           ease: "power2.out",
         }
       )
@@ -215,7 +216,7 @@ export default function Home() {
         { opacity: 0 },
         {
           opacity: 1,
-          duration: 0.05,
+          duration: 0.1,
           ease: "power2.out",
         }
       )
@@ -267,7 +268,7 @@ export default function Home() {
         scrollTrigger: {
           trigger: containerWhyRef.current,
           start: "top top",
-          end: "+=175%",      // scroll distance controls timing
+          end: "+=300%",      // scroll distance controls timing
           pin: true,          // 🔒 pinned screen
           // pinSpacing: false,
           scrub: true,
@@ -291,8 +292,8 @@ export default function Home() {
           el2WhyRef.current,
           { x:"100vw" },
           {
-            x:"-170vw",
-            duration: 0.2,
+            x:"-230vw",
+            duration: 1.5,
             ease: "power2.out",
           }
         )
@@ -361,7 +362,7 @@ export default function Home() {
                       <span className="line-clamp-3 text-sm">
                         {s.description}
                       </span>
-                    </div>
+                  </div>
                 ))}
               </div>
           </section>
@@ -372,21 +373,28 @@ export default function Home() {
                     Why Chill Thrive
                   </h2>
 
-                  <div ref={el2WhyRef} className="absolute top-[calc(50vh-100px)] left-[calc(100vw)] flex flex-row flex-nowrap gap-70">
+                  <div ref={el2WhyRef} className="absolute z-50 top-[calc(50vh-100px)] left-[calc(100vw)] flex flex-row flex-nowrap gap-70">
                     {reasons.map((item, index) => (
-                      <Card
+                      // <Card
+                      //   key={index}
+                      //   className="bg-white"
+                      // >
+                      //   <CardHeader className="space-y-2 w-120">
+                      //     <CardTitle className="text-5xl font-regular">
+                      //       {item.title}
+                      //     </CardTitle>
+                      //     <CardDescription className="text-xl font-light">
+                      //       {item.description}
+                      //     </CardDescription>
+                      //   </CardHeader>
+                      // </Card>
+                      <div
                         key={index}
-                        className="bg-white z-50"
+                        className={`bg-white w-[40vw] p-5 border-2`}
                       >
-                        <CardHeader className="space-y-2 w-120">
-                          <CardTitle className="text-5xl font-regular">
-                            {item.title}
-                          </CardTitle>
-                          <CardDescription className="text-xl font-light">
-                            {item.description}
-                          </CardDescription>
-                        </CardHeader>
-                      </Card>
+                        <h1 className="text-7xl">{item.title}</h1>
+                        <p className="mt-5">{item.description}</p>
+                      </div>
                     ))}
                   </div>
                 </section>

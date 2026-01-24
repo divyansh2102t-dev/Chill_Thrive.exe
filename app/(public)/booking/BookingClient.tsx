@@ -353,7 +353,7 @@ export default function BookingClient() {
             setForm={setForm}
             onBack={() => { setTime(null); setStep(2); }}
             onPricingChange={setPricing}
-            onSuccess={(pricingResult) => {
+            onSuccess={(pricingResult: any) => {
               setConfirmed({
                 service: selection.service, // Crucial: This adds the service back in
                 duration: selection.duration,

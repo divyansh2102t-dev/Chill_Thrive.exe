@@ -45,6 +45,32 @@ export default function AdminBookings() {
     await supabase.from('bookings').update({ status }).eq('id', id);
   };
 
+  const handleDelete = async (id: string) => {
+    // 1. Safety first - confirm before destroying data
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this reservation? This action cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    // 2. Optimistic Update: Remove it from the list immediately for a 'snappy' feel
+    const previousBookings = [...bookings];
+    setBookings(prev => prev.filter(b => b.id !== id));
+
+    // 3. Delete from Supabase
+    const { error } = await supabase
+      .from('bookings')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Delete Error:", error.message);
+      alert("Failed to delete booking. Restoring record...");
+      // Rollback if database call fails
+      setBookings(previousBookings);
+    }
+  };
+
   /* ---------- CALCULATIONS ---------- */
   const stats = {
     revenue: bookings.filter(b => b.status === 'confirmed').reduce((acc, curr) => acc + curr.final_amount, 0),

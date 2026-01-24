@@ -106,9 +106,33 @@ export default function ServicesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Permanently delete this service?')) return;
-    await supabase.from('services').delete().eq('id', id);
-    setServices(services.filter(s => s.id !== id));
+    // 1. Confirm intent
+    const isConfirmed = window.confirm(
+      "Permanently delete this service? This will also remove it from any active customer booking views."
+    );
+    if (!isConfirmed) return;
+
+    // 2. Perform deletion
+    const { error } = await supabase
+      .from('services')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      // 3. Handle specific DB errors (like Foreign Key violations)
+      console.error("Deletion failed:", error);
+      alert(
+        error.code === "23503" 
+          ? "Cannot delete: This service is linked to existing bookings or other records. Deactivate it instead." 
+          : `Error: ${error.message}`
+      );
+    } else {
+      // 4. Update local state only on success
+      setServices((prev) => prev.filter((s) => s.id !== id));
+      
+      // Optional: Reset form if the deleted item was being edited
+      if (formData.id === id) resetForm();
+    }
   };
 
   const handleToggle = async (service: Service) => {
@@ -116,6 +140,8 @@ export default function ServicesPage() {
     setServices(services.map(s => s.id === service.id ? { ...s, is_active: next } : s));
     await supabase.from('services').update({ is_active: next }).eq('id', service.id);
   };
+
+  
 
   const handleEditClick = (service: Service) => {
     setFormData({ ...service, duration_minutes: service.duration_minutes[0] });

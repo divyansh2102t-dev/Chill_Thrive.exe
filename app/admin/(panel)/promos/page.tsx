@@ -91,6 +91,39 @@ export default function PromoCodesPage() {
     return { label: 'Active', color: 'bg-emerald-100 text-emerald-700' };
   };
 
+  /* ---------- ACTIONS ---------- */
+
+  const handleEdit = (coupon: Coupon) => {
+    // Populate the form with existing data
+    setFormData(coupon);
+    setIsEditing(true);
+    
+    // Smooth scroll to the editor for better UX
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDelete = async (id: string) => {
+    // Standard safety check for admin actions
+    const isConfirmed = window.confirm(
+      "Are you sure you want to delete this campaign? This action cannot be undone and will stop the code from working immediately."
+    );
+
+    if (!isConfirmed) return;
+
+    const { error } = await supabase
+      .from('coupons')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Delete Error:", error.message);
+      alert("Failed to delete the coupon. Please try again.");
+    } else {
+      // Optimistically update the local UI state
+      setCoupons(coupons.filter(c => c.id !== id));
+    }
+  };
+
   if (loading) return (
     <div className="flex flex-col h-96 items-center justify-center space-y-4">
       <Loader2 className="animate-spin text-indigo-500" size={48} />

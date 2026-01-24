@@ -5,6 +5,8 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import Link from "next/link";
 
+import { usePathname } from "next/navigation";
+
 gsap.registerPlugin(ScrollTrigger);
 
 type NavItem = {
@@ -16,6 +18,7 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const pathname = usePathname(); // 2. Initialize it
 
   // const navItems: NavItem[] = [
   //   { label: "services", href: "/services" },
@@ -63,95 +66,81 @@ export default function Header() {
   const leftZoneRef = useRef<HTMLDivElement>(null);
   const rightZoneRef = useRef<HTMLDivElement>(null);
 
-useEffect(() => {
-  const hero = document.querySelector("#hero");
+  useEffect(() => {
+    // 3. This block now runs every time the URL changes
+    const hero = document.querySelector("#hero");
+    let heroActive = false;
+    let activeSide: "left" | "right" | null = null;
 
-  let heroActive = false;
-  let activeSide: "left" | "right" | null = null;
-
-  // Initial state
-  gsap.set([leftNavRef.current, rightNavRef.current], {
-    opacity: 1,
-  });
-
-ScrollTrigger.create({
-  trigger: hero,
-  start: "top top",
-  end: "bottom top",
-  onEnter: () => {
-    heroActive = false;   // hero visible
-  },
-  onEnterBack: () => {
-    heroActive = false;   // hero visible again
-    show(rightNavRef.current)
-    show(leftNavRef.current)
-  },
-  onLeave: () => {
-    heroActive = true;  // hero gone
-    hideBoth();          // force hide
-  },
-});
-
-  // ===== MOUSE REGION DETECTION =====
-  const onMouseMove = (e: MouseEvent) => {
-    if (!heroActive) return;
-
-    const vw = window.innerWidth;
-    const x = e.clientX;
-    const threshold = vw * 0.15;
-
-    if (x < threshold && activeSide !== "left") {
-      activeSide = "left";
-      show(leftNavRef.current);
-      hide(rightNavRef.current);
-    } 
-    else if (x > vw - threshold && activeSide !== "right") {
-      activeSide = "right";
-      show(rightNavRef.current);
-      hide(leftNavRef.current);
-    } 
-    else if (x >= threshold && x <= vw - threshold && activeSide !== null) {
-      activeSide = null;
-      hideBoth();
-    }
-  };
-
-  window.addEventListener("mousemove", onMouseMove);
-
-  // ===== ANIMATIONS (opacity only) =====
-  function show(el: HTMLDivElement | null) {
-    if (!el) return;
-
-    gsap.to(el, {
+    // Reset styles immediately on page change
+    gsap.set([leftNavRef.current, rightNavRef.current], {
       opacity: 1,
-      duration: 0.35,
-      ease: "sine.out", // headlight
-      overwrite: "auto",
     });
-  }
 
-  function hide(el: HTMLDivElement | null) {
-    if (!el) return;
-
-    gsap.to(el, {
-      opacity: 0,
-      duration: 0.25,
-      ease: "sine.in",
-      overwrite: "auto",
+    // Create your ScrollTrigger
+    const st = ScrollTrigger.create({
+      trigger: hero,
+      start: "top top",
+      end: "bottom top",
+      onEnter: () => { heroActive = false; },
+      onEnterBack: () => {
+        heroActive = false;
+        show(rightNavRef.current);
+        show(leftNavRef.current);
+      },
+      onLeave: () => {
+        heroActive = true;
+        hideBoth();
+      },
     });
-  }
 
-  function hideBoth() {
-    hide(leftNavRef.current);
-    hide(rightNavRef.current);
-    activeSide = null;
-  }
+    const onMouseMove = (e: MouseEvent) => {
+      if (!heroActive) return;
+      const vw = window.innerWidth;
+      const x = e.clientX;
+      const threshold = vw * 0.15;
 
-  return () => {
-    window.removeEventListener("mousemove", onMouseMove);
-    ScrollTrigger.getAll().forEach(t => t.kill());
-  };
-}, []);
+      if (x < threshold && activeSide !== "left") {
+        activeSide = "left";
+        show(leftNavRef.current);
+        hide(rightNavRef.current);
+      } 
+      else if (x > vw - threshold && activeSide !== "right") {
+        activeSide = "right";
+        show(rightNavRef.current);
+        hide(leftNavRef.current);
+      } 
+      else if (x >= threshold && x <= vw - threshold && activeSide !== null) {
+        activeSide = null;
+        hideBoth();
+      }
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+
+    function show(el: HTMLElement | null) {
+      if (!el) return;
+      gsap.to(el, { opacity: 1, duration: 0.35, ease: "sine.out", overwrite: "auto" });
+    }
+
+    function hide(el: HTMLElement | null) {
+      if (!el) return;
+      gsap.to(el, { opacity: 0, duration: 0.25, ease: "sine.in", overwrite: "auto" });
+    }
+
+    function hideBoth() {
+      hide(leftNavRef.current);
+      hide(rightNavRef.current);
+      activeSide = null;
+    }
+
+    // 4. CLEANUP: Crucial for page transitions
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      st.kill(); // Kill the specific trigger
+      ScrollTrigger.getAll().forEach(t => t.kill()); // Kill all others to be safe
+    };
+  }, [pathname]); // 5. Pathname dependency triggers the reset
 
   return (
     <header

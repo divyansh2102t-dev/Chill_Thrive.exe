@@ -87,7 +87,7 @@ export default function AwarenessPage() {
       <main ref={containerRef} className="bg-white font-sans text-black overflow-x-hidden">
         
         {/* ---------- HERO SECTION ---------- */}
-        <section ref={heroRef} className="h-screen flex flex-col items-center justify-center relative px-6">
+        <section ref={heroRef} id="hero" className="h-screen flex flex-col items-center justify-center relative px-6">
           <img 
             src="/image/icebathhero.png" 
             alt="" 

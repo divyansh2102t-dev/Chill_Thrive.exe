@@ -16,7 +16,7 @@ export interface Service {
 
   benefits: string[];         // bullet points
 
-  price: number;              // discounted / final price
+  prices: number[];              // discounted / final price
   originalPrice?: number;     // only for combos
 
   currency: "INR";

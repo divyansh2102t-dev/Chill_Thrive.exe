@@ -237,7 +237,7 @@ export default function Home() {
         description: s.description,
         durationMinutes: [],
         benefits: [],
-        price: 0,
+        prices: [],
         currency: "INR",
         isActive: true,
         createdAt: "",

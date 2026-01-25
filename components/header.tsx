@@ -124,7 +124,7 @@ export default function Header() {
         <div className="md:hidden absolute top-10 right-6 z-50 flex items-center gap-6">
           <Link href="/booking">
             <span className="font-light text-lg underline text-gray-600">
-              book
+              Book
             </span>
           </Link>
           <button 
@@ -182,8 +182,8 @@ export default function Header() {
 
         {/* DESKTOP UI - BOOKING LINK */}
         <Link id="book" className="hidden md:block absolute top-10 right-10 rounded-2xl" href="/booking">
-          <span className="font-light text-xl underline hover:no-underline text-gray-600">
-            book a service
+          <span className="font-[400] text-3xl hover:underline text-[#289BD0]">
+            Book
           </span>
         </Link>
       </div>

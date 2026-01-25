@@ -141,3 +141,42 @@ create table public.awareness_content (
   updated_at timestamp with time zone null default now(),
   constraint awareness_content_pkey primary key (id)
 ) TABLESPACE pg_default;
+
+
+CREATE OR REPLACE FUNCTION get_available_slots(target_date DATE)
+RETURNS TABLE (
+    id UUID,
+    start_time TIME,
+    end_time TIME,
+    total_capacity INTEGER,
+    booked_count BIGINT,
+    remaining_capacity INTEGER
+) AS $$
+BEGIN
+    -- Check if the date is blocked globally
+    IF EXISTS (SELECT 1 FROM blocked_dates WHERE blocked_date = target_date) THEN
+        RETURN;
+    END IF;
+
+    RETURN QUERY
+    SELECT 
+        st.id,
+        st.start_time,
+        st.end_time,
+        st.capacity AS total_capacity,
+        COUNT(b.id) AS booked_count,
+        (st.capacity - COUNT(b.id))::INTEGER AS remaining_capacity
+    FROM 
+        slot_timings st
+    LEFT JOIN 
+        bookings b ON st.id = b.slot_id 
+        AND b.booking_date = target_date 
+        AND b.status != 'cancelled'
+    WHERE 
+        st.is_enabled = TRUE
+    GROUP BY 
+        st.id, st.start_time, st.end_time, st.capacity
+    ORDER BY 
+        st.start_time ASC;
+END;
+$$ LANGUAGE plpgsql;

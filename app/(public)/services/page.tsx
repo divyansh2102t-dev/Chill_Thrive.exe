@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import type { Service } from "../../../lib/types/service";
 import { supabase } from "../../../lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ServiceCardSkeleton } from "./components/ServiceCardSkeleton";
-
 import FullPageLoader from "../../../components/FullPageLoader";
+import { X, Play } from "lucide-react";
 
 export default function Services() {
   const router = useRouter();
@@ -15,212 +14,185 @@ export default function Services() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeVideo, setActiveVideo] = useState<string | null>(null);
 
-  // local UI-only duration selection (per service)
-  const [selectedDurations, setSelectedDurations] = useState<
-    Record<string, number>
-  >({});
+  const [selectedDurations, setSelectedDurations] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
         setLoading(true);
-        setError(null);
-
         const { data, error } = await supabase
           .from("services")
           .select("*")
           .eq("is_active", true)
-          .order("created_at", { ascending: false });
+          .order("sort_order", { ascending: true });
 
         if (error) throw error;
 
         const normalized: Service[] = (data ?? []).map((s) => ({
-          id: s.id,
-          slug: s.slug,
-          title: s.title,
-          type: s.type,
-
-          mediaUrl: s.media_url, // ✅ FIX
-          mediaType: s.media_type, // ✅ FIX
-          ytUrl: s.yt_url ?? undefined, // ✅ FIX
-
-          description: s.description,
-
+          ...s,
+          mediaUrl: s.media_url,
+          mediaType: s.media_type,
+          ytUrl: s.yt_url,
           durationMinutes: s.duration_minutes ?? [],
           benefits: s.benefits ?? [],
-
-          price: Number(s.price),
-          originalPrice: s.original_price ?? undefined,
-
-          currency: s.currency,
-
-          badge: s.badge ?? undefined,
-          includedServices: s.included_services ?? undefined,
-
-          isActive: s.is_active,
-          createdAt: s.created_at,
+          // Normalize the prices array from the database
+          prices: s.prices ?? [],
         }));
 
-        setServices(normalized as Service[]);
+        setServices(normalized);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load services",
-        );
+        setError(err instanceof Error ? err.message : "Failed to load services");
       } finally {
         setLoading(false);
       }
     };
-
     fetchServices();
   }, []);
-
-  const singleServices = services.filter((s) => s.type === "single");
-  const comboServices = services.filter((s) => s.type === "combo");
 
   const renderServiceCard = (s: Service) => {
     const durations = s.durationMinutes ?? [];
     const selectedDuration = selectedDurations[s.id] ?? durations[0];
-
     
+    // Logic to find the price corresponding to the selected duration's index
+    const durationIndex = durations.indexOf(selectedDuration);
+    const displayPrice = s.prices?.[durationIndex] ?? s.prices?.[0] ?? 0;
 
     return (
       <div
-        className="bg-[#F9F9F9] p-4 w-full flex flex-col items-start relative"
+        className="bg-[#F9F9F9] p-6 w-full flex flex-col md:flex-row gap-8 relative"
         key={s.id}
       >
-        <div className="flex flex-row w-full">
+        {/* LEFT: Square Image (No Zoom) */}
+        <div 
+          className="relative w-full md:w-[400px] aspect-square shrink-0 cursor-pointer overflow-hidden rounded-3xl bg-gray-200"
+          onClick={() => s.ytUrl && setActiveVideo(s.ytUrl)}
+        >
           <img
-            className="w-[450px] h-[450px] rounded-3xl object-cover"
+            className="w-full h-full object-cover"
             src={s.mediaUrl || "/placeholder.jpg"}
             alt={s.title}
           />
+          {s.ytUrl && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+               <div className="bg-white p-4 rounded-full">
+                 <Play className="fill-[#289BD0] text-[#289BD0] w-6 h-6" />
+               </div>
+            </div>
+          )}
+          
+          {/* Tag: Black background, White text */}
+          {s.type === "combo" && (
+            <div className="absolute top-4 left-4 px-4 py-1.5 bg-black text-white text-[10px] font-bold uppercase tracking-widest rounded-full">
+              Combo
+            </div>
+          )}
+        </div>
 
-<div className="flex flex-col w-full justify-between mt-4 mb-4">
-          {/* <span className="text-2xl font-semibold">
-              {s.title}
-            </span> */}
-          <div>
-            <span className="text-2xl font-semibold">{s.title}</span>
-            <p className="text-sm text-gray-500">{s.slug}</p>
+        {/* RIGHT: Content */}
+        <div className="flex flex-col flex-grow justify-between py-2">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-4xl font-semibold text-black">{s.title}</h3>
+              <p className="text-gray-400 text-sm mt-1">{s.slug}</p>
+            </div>
+
+            <p className="text-gray-600 leading-relaxed text-base">
+              {s.description}
+            </p>
+
+            {/* Benefits: Simple list, no extra colors */}
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-3">Included Benefits</p>
+              <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {s.benefits?.map((benefit, idx) => (
+                  <li key={idx} className="flex items-start text-sm text-black">
+                    <span className="mr-2">•</span>
+                    {benefit}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
-          <span className="line-clamp-3 text-sm">{s.description}</span>
-
-          {/* <a href="/services">
-              <img
-                className="bg-[#289BD0] h-7 w-7 p-2.25 rounded-lg"
-                src="/image/arrow01.svg"
-                alt="View service"
-              />
-            </a> */}
-
-        </div>
-        </div>
-
-
-        {s.type === "combo" ? 
-        <div className="absolute rounded-4xl top-5.5 left-5.5 p-1 py-0.5 bg-white">
-          Combo
-        </div> : <></>}
-        
-
-        
-          <div className="flex flex-row justify-between w-full">
-            <div>
-              <p className="text-sm font-light mb-1">Duration</p>
-              <div className="flex gap-2 flex-wrap">
+          <div className="mt-10 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
+            {/* Duration Selector */}
+            <div className="space-y-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">Duration</p>
+              <div className="flex gap-2">
                 {durations.map((d) => (
-                  <Button
+                  <button
                     key={d}
-                    size="sm"
-                    color="blue"
-                    variant={selectedDuration === d ? "default" : "outline"}
-                    onClick={() =>
-                      setSelectedDurations((prev) => ({
-                        ...prev,
-                        [s.id]: d,
-                      }))
-                    }
+                    onClick={() => setSelectedDurations(prev => ({ ...prev, [s.id]: d }))}
+                    className={`px-5 py-2.5 rounded-xl text-sm transition-colors ${
+                      selectedDuration === d 
+                        ? "bg-[#289BD0] text-white" 
+                        : "bg-white text-black border border-gray-200"
+                    }`}
                   >
                     {d} min
-                  </Button>
+                  </button>
                 ))}
               </div>
             </div>
-              
-              <div>
 
-            <p className="text-lg font-light">₹{s.price}</p>
-
-            <Button
-              onClick={() =>
-                router.push(
-                  `/booking?serviceId=${s.id}&duration=${selectedDuration}`,
-                )
-              }
-            >
-              Book
-            </Button>
+            {/* Price & Book */}
+            <div className="flex items-center gap-8">
+              <div className="text-right">
+                <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">Investment</p>
+                {/* Dynamically updated price based on duration selection */}
+                <p className="text-3xl font-light">₹{displayPrice}</p>
               </div>
+              <Button
+                className="bg-black hover:bg-[#289BD0] text-white px-10 h-14 rounded-xl transition-colors shadow-none"
+                onClick={() => router.push(`/booking?serviceId=${s.id}&duration=${selectedDuration}`)}
+              >
+                Book Now
+              </Button>
+            </div>
           </div>
+        </div>
       </div>
     );
   };
 
-  if (error) {
-    return <div className="p-4 text-red-600">Error: {error}</div>;
-  }
+  if (error) return <div className="p-10 text-center text-red-500">{error}</div>;
 
   return (
-    <div className="md:w-[960px] mx-auto">
-      <h1 className="text-7xl font-thin text-center h-[50vh] leading-[50vh]">
-        {" "}
-        Our Services
-      </h1>
+    <div className="max-w-[1080px] mx-auto px-4 pb-24">
+      <div className="h-[40vh] flex flex-col items-center justify-center">
+        <h1 className="text-7xl font-thin tracking-tighter text-center">
+          Our Services
+        </h1>
+      </div>
 
-      {/* ---------- LOADING STATE ---------- */}
       <FullPageLoader visible={loading} />
 
       {!loading && (
-        <>
-          {/* ---------- INDIVIDUAL SERVICES ---------- */}
-          {/* {singleServices.length > 0 && (
-            <section className="mb-12">
-              <h2 className="text-2xl font-semibold mb-6">
-                Individual Services
-              </h2>
+        <div className="flex flex-col gap-12">
+          {services.map(renderServiceCard)}
+        </div>
+      )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                {singleServices.map(renderServiceCard)}
-              </div>
-            </section>
-          )} */}
-          {services.length > 0 && (
-            <section className="mb-12">
-              <div className="flex flex-col gap-6">
-                {services.map(renderServiceCard)}
-              </div>
-            </section>
-          )}
-
-          {/* ---------- COMBO PACKAGES ---------- */}
-          {/* {comboServices.length > 0 && (
-            <section>
-              <h2 className="text-2xl font-semibold mb-6">Combo Packages</h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-32gap-6">
-                {comboServices.map(renderServiceCard)}
-              </div>
-            </section>
-          )} */}
-
-          {services.length === 0 && (
-            <div className="text-center text-gray-500 mt-6">
-              No services found.
-            </div>
-          )}
-        </>
+      {/* VIDEO POPUP */}
+      {activeVideo && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/90 p-4">
+          <button 
+            onClick={() => setActiveVideo(null)}
+            className="absolute top-6 right-6 text-white hover:text-gray-300 transition-colors"
+          >
+            <X size={32} />
+          </button>
+          <div className="w-full max-w-4xl aspect-video bg-black rounded-xl overflow-hidden">
+            <iframe
+              src={activeVideo.includes('v=') ? activeVideo.replace("watch?v=", "embed/") : activeVideo}
+              className="w-full h-full"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          </div>
+        </div>
       )}
     </div>
   );

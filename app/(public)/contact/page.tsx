@@ -1,22 +1,59 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase/client"; // Ensure this path is correct for your project
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Phone, Mail, MapPin, Loader2 } from "lucide-react"; // Logos for the details
 
 export default function ContactPage() {
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    message: "",
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.phone || !formData.message) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.from("inquiries").insert([
+        {
+          full_name: formData.name,
+          phone_number: formData.phone,
+          message: formData.message,
+        },
+      ]);
+
+      if (error) throw error;
+
+      alert("Message sent successfully!");
+      setFormData({ name: "", phone: "", message: "" });
+    } catch (error: any) {
+      alert(error.message || "Failed to send message.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white min-h-screen font-sans text-black pb-24">
       {/* ---------- HERO SECTION ---------- */}
       <section className="pt-24 pb-16 px-6 text-center">
         <div className="max-w-[1080px] mx-auto space-y-4">
           <h1 className="text-[72px] md:text-[82px] leading-tight font-bold tracking-tight">
-            Get in <span className="text-[#289BD0]">Touch.</span>
+            Get in <span className="text-[#289BD0]">Touch</span>
           </h1>
           <p className="text-xl md:text-2xl font-light text-gray-500 max-w-2xl mx-auto pt-4">
-            Have questions about protocols or bookings? We&apos;re here to help you thrive.
+            Have questions about protocols or bookings? We're here to help you thrive.
           </p>
         </div>
       </section>
@@ -31,17 +68,17 @@ export default function ContactPage() {
             <div className="space-y-6">
               <div className="flex items-start gap-4">
                 <div className="bg-[#289BD0] p-3 rounded-2xl">
-                   <img src="/image/arrow01.svg" className="h-5 w-5 -rotate-45" alt="" />
+                   <Phone className="h-5 w-5 text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-bold uppercase tracking-widest text-gray-400">Phone</p>
-                  <p className="text-xl font-medium">+91 98765 43210</p>
+                  <p className="text-xl font-medium">+91 92270 25160</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
                 <div className="bg-[#5DB4DB] p-3 rounded-2xl">
-                   <img src="/image/arrow01.svg" className="h-5 w-5 -rotate-45" alt="" />
+                   <Mail className="h-5 w-5 text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-bold uppercase tracking-widest text-gray-400">Email</p>
@@ -51,13 +88,14 @@ export default function ContactPage() {
 
               <div className="flex items-start gap-4">
                 <div className="bg-black p-3 rounded-2xl">
-                   <img src="/image/arrow01.svg" className="h-5 w-5 -rotate-45" alt="" />
+                   <MapPin className="h-5 w-5 text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-bold uppercase tracking-widest text-gray-400">Location</p>
                   <p className="text-xl font-medium leading-relaxed">
-                    Chill Thrive Wellness Studio,<br />
-                    Surat, Gujarat, India
+                    At Samavesh, Auqa Therapy Centre,
+                    Plot no - 3, SD jain school lane, opp. livestream cafe,
+                    indianbank, Piplod, Surat, Gujarat 395007
                   </p>
                 </div>
               </div>
@@ -68,7 +106,7 @@ export default function ContactPage() {
           <div className="overflow-hidden rounded-[40px] border-8 border-[#F9F9F9] grayscale hover:grayscale-0 transition-all duration-500 shadow-sm">
             <iframe
               title="Google Maps"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d119066.41709471133!2d72.7398946123447!3d21.159340299232335!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be04e59411d1563%3A0xfe4558290938b042!2sSurat%2C%20Gujarat!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3536.8551033884314!2d72.76935127503504!3d21.153772080527002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be04d71f6a8ac3b%3A0xb610c6ffed190bbe!2sChill%20thrive%20Ice%20bath!5e1!3m2!1sen!2sin!4v1769363734449!5m2!1sen!2sin"
               className="w-full h-[350px] border-0"
               loading="lazy"
             />
@@ -78,13 +116,15 @@ export default function ContactPage() {
         {/* ---------- RIGHT COLUMN: CONTACT FORM ---------- */}
         <div className="bg-white border-2 border-[#F9F9F9] p-10 rounded-[40px] shadow-sm">
           <h2 className="text-3xl font-semibold mb-8">Send a Message</h2>
-          <form className="space-y-8">
+          <form className="space-y-8" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-8">
               <div className="space-y-3">
                 <Label htmlFor="name" className="text-xs uppercase tracking-widest font-bold text-gray-400">Full Name</Label>
                 <Input
                   id="name"
                   placeholder="John Doe"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="border-0 border-b-2 border-[#F9F9F9] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#289BD0] transition-colors bg-transparent text-lg"
                 />
               </div>
@@ -94,6 +134,8 @@ export default function ContactPage() {
                 <Input
                   id="phone"
                   placeholder="+91 00000 00000"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="border-0 border-b-2 border-[#F9F9F9] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#289BD0] transition-colors bg-transparent text-lg"
                 />
               </div>
@@ -104,6 +146,8 @@ export default function ContactPage() {
                   id="message"
                   placeholder="Tell us what's on your mind..."
                   rows={4}
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   className="border-0 border-b-2 border-[#F9F9F9] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#289BD0] transition-colors bg-transparent text-lg resize-none"
                 />
               </div>
@@ -111,14 +155,22 @@ export default function ContactPage() {
 
             <Button 
               type="submit" 
+              disabled={loading}
               className="w-full bg-[#289BD0] hover:bg-black text-white h-16 rounded-2xl text-xl font-semibold transition-all duration-300"
             >
-              Send Message
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Send Message"
+              )}
             </Button>
           </form>
           
           <div className="mt-8 flex justify-center opacity-10">
-             <img src="/image/icebathhero.png" className="h-16 grayscale" alt="" />
+              <img src="/image/icebathhero.png" className="h-16 grayscale" alt="" />
           </div>
         </div>
 

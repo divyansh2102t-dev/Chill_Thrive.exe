@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Service } from "@/lib/types/service";
 import { supabase } from "@/lib/supabase/client";
@@ -8,8 +8,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2, Clock, Calendar as CalIcon } from "lucide-react";
-import FullPageLoader from "@/components/FullPageLoader"
+import { Loader2, CheckCircle2, Clock, Calendar as CalIcon, X } from "lucide-react";
+import FullPageLoader from "@/components/FullPageLoader";
 
 /* ---------------- HELPERS ---------------- */
 
@@ -42,15 +42,30 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
   );
 }
 
+// Razorpay Script Loader
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 /* ---------------- STEP 1: SERVICE ---------------- */
 
-function ServiceStep({ onSelect }: { onSelect: (data: { service: Service; duration: number }) => void }) {
+function ServiceStep({ onSelect }: { onSelect: (data: { service: Service; duration: number; price: number }) => void }) {
   const [services, setServices] = useState<Service[]>([]);
   const [selectedDurations, setSelectedDurations] = useState<Record<string, number>>({});
 
   useEffect(() => {
     supabase.from("services").select("*").eq("is_active", true).then(({ data }) => {
-      const normalized = data?.map((s: any) => ({ ...s, durationMinutes: s.duration_minutes ?? [] })) ?? [];
+      const normalized = data?.map((s: any) => ({ 
+        ...s, 
+        durationMinutes: s.duration_minutes ?? [],
+        prices: s.prices ?? [] 
+      })) ?? [];
       setServices(normalized);
     });
   }, []);
@@ -62,6 +77,8 @@ function ServiceStep({ onSelect }: { onSelect: (data: { service: Service; durati
         {services.map((s) => {
           const durations = s.durationMinutes;
           const selectedDuration = selectedDurations[s.id] ?? durations[0];
+          const durationIndex = durations.indexOf(selectedDuration);
+          const currentPrice = s.prices?.[durationIndex] ?? s.prices?.[0] ?? 0;
 
           return (
             <div key={s.id} className="bg-[#F9F9F9] rounded-[40px] p-8 md:p-10 flex flex-col md:flex-row justify-between items-center gap-8 group hover:bg-[#F0F9FF] transition-colors duration-500">
@@ -71,6 +88,7 @@ function ServiceStep({ onSelect }: { onSelect: (data: { service: Service; durati
                   {durations.map((d) => (
                     <button
                       key={d}
+                      type="button"
                       onClick={() => setSelectedDurations(prev => ({ ...prev, [s.id]: d }))}
                       className={`px-4 py-2 rounded-xl text-xs font-bold tracking-widest transition-all ${
                         selectedDuration === d ? "bg-black text-white" : "bg-white text-gray-400 hover:text-black"
@@ -82,9 +100,9 @@ function ServiceStep({ onSelect }: { onSelect: (data: { service: Service; durati
                 </div>
               </div>
               <div className="flex flex-col items-center md:items-end gap-4">
-                <p className="text-4xl font-light">₹{s.price}</p>
+                <p className="text-4xl font-light">₹{currentPrice}</p>
                 <Button 
-                  onClick={() => onSelect({ service: s, duration: selectedDuration })}
+                  onClick={() => onSelect({ service: s, duration: selectedDuration, price: currentPrice })}
                   className="bg-[#289BD0] hover:bg-black text-white px-10 py-6 rounded-2xl text-lg font-bold transition-all"
                 >
                   Select
@@ -101,19 +119,35 @@ function ServiceStep({ onSelect }: { onSelect: (data: { service: Service; durati
 /* ---------------- STEP 2: DATE/TIME ---------------- */
 
 function DateTimeStep({ date, time, onBack, onNext }: any) {
+  // FIX: Initialize with current date if none selected to trigger slot fetch immediately
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(date ?? new Date());
   const [selectedTime, setSelectedTime] = useState(time);
   const [slots, setSlots] = useState<any[]>([]);
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const fetchBlocked = async () => {
+      const { data } = await supabase.from("blocked_dates").select("blocked_date");
+      if (data) setBlockedDates(data.map(d => d.blocked_date));
+    };
+    fetchBlocked();
+  }, []);
+
+  // FIX: This now runs on mount because selectedDate is initialized
   useEffect(() => {
     if (!selectedDate) return;
     const fetchSlots = async () => {
       setLoading(true);
-      const res = await fetch(`/api/slots?date=${selectedDate.toISOString().split("T")[0]}`);
-      const data = await res.json();
-      setSlots(data.slots ?? []);
-      setLoading(false);
+      try {
+        const res = await fetch(`/api/slots?date=${selectedDate.toISOString().split("T")[0]}`);
+        const data = await res.json();
+        setSlots(data.slots ?? []);
+      } catch (err) {
+        console.error("Failed to fetch slots", err);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchSlots();
   }, [selectedDate]);
@@ -127,7 +161,11 @@ function DateTimeStep({ date, time, onBack, onNext }: any) {
             mode="single"
             selected={selectedDate}
             onSelect={setSelectedDate}
-            disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+            disabled={(d) => {
+                const isPast = d < new Date(new Date().setHours(0, 0, 0, 0));
+                const isBlocked = blockedDates.includes(d.toISOString().split("T")[0]);
+                return isPast || isBlocked;
+            }}
             className="rounded-md border-none"
           />
         </div>
@@ -136,22 +174,31 @@ function DateTimeStep({ date, time, onBack, onNext }: any) {
           <div className="grid grid-cols-1 gap-3">
             {loading ? (
                <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#289BD0]" /></div>
+            ) : !selectedDate ? (
+                <p className="text-center text-gray-400 py-10">Select a date to view available slots.</p>
             ) : slots.length === 0 ? (
                <p className="text-center text-gray-400 py-10">No availability for this date.</p>
             ) : (
               slots.map((slot) => {
                 const label = `${slot.start_time.slice(0, 5)} - ${slot.end_time.slice(0, 5)}`;
                 const active = selectedTime?.slotId === slot.id;
+                const isFull = slot.remaining_capacity <= 0;
+
                 return (
                   <button
                     key={slot.id}
+                    disabled={isFull}
                     onClick={() => setSelectedTime({ slotId: slot.id, label })}
                     className={`p-6 rounded-[24px] text-left transition-all border-2 flex justify-between items-center ${
-                      active ? "border-[#289BD0] bg-white shadow-lg scale-[1.02]" : "border-transparent bg-[#F9F9F9] hover:bg-gray-100"
+                      active ? "border-[#289BD0] bg-white shadow-lg scale-[1.02]" : 
+                      isFull ? "opacity-50 grayscale cursor-not-allowed bg-gray-100 border-transparent" :
+                      "border-transparent bg-[#F9F9F9] hover:bg-gray-100"
                     }`}
                   >
                     <span className={`text-xl font-medium ${active ? 'text-[#289BD0]' : 'text-black'}`}>{label}</span>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{slot.capacity} spots left</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        {isFull ? 'Fully Booked' : `${slot.remaining_capacity} spots left`}
+                    </span>
                   </button>
                 )
               })
@@ -176,32 +223,102 @@ function DateTimeStep({ date, time, onBack, onNext }: any) {
 
 /* ---------------- STEP 3: DETAILS ---------------- */
 
-function DetailsStep({ service, date, time, duration, form, setForm, onBack, onSuccess, onPricingChange }: any) {
+function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, onPricingChange }: any) {
   const [submitting, setSubmitting] = useState(false);
   const [coupon, setCoupon] = useState("");
   const [discount, setDiscount] = useState(0);
+  const searchParams = useSearchParams();
 
-  async function applyCoupon() {
-    const res = await fetch("/api/coupon", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: coupon, serviceId: service.id, duration }),
-    });
-    const data = await res.json();
-    if (data.valid) {
-      setDiscount(data.discountAmount);
-      onPricingChange({ baseAmount: service.price, discountAmount: data.discountAmount, finalAmount: service.price - data.discountAmount, couponCode: coupon });
+  const { service, duration, price } = selection;
+  const finalAmount = price - discount;
+
+  // Auto-Apply Coupon Logic
+  useEffect(() => {
+    const autoCode = searchParams.get("promo");
+    if (autoCode) {
+      setCoupon(autoCode.toUpperCase());
+      handleApplyCoupon(autoCode.toUpperCase());
+    }
+  }, []);
+
+  async function handleApplyCoupon(codeToApply: string) {
+    try {
+      const res = await fetch("/api/coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: codeToApply, serviceId: service.id, duration }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setDiscount(data.discountAmount);
+        onPricingChange({ baseAmount: price, discountAmount: data.discountAmount, finalAmount: price - data.discountAmount, couponCode: codeToApply });
+      }
+    } catch (e) {
+      console.error("Coupon failed");
     }
   }
 
   async function confirmBooking() {
     setSubmitting(true);
+
+    const bookingPayload = { 
+      service, 
+      date: date.toISOString().split("T")[0], 
+      slotId: time.slotId, 
+      duration, 
+      couponCode: coupon, 
+      discountAmount: discount, 
+      finalAmount: finalAmount, 
+      form 
+    };
+
+    // --- RAZORPAY FLOW ---
+    if (form.payment === "QR") {
+      const loaded = await loadRazorpay();
+      if (!loaded) {
+        alert("Razorpay failed to load");
+        setSubmitting(false);
+        return;
+      }
+
+      const options = {
+        key: "rzp_test_YOUR_KEY_HERE", // Replace with your test key
+        amount: finalAmount * 100,
+        currency: "INR",
+        name: "Recovery Center",
+        description: `Booking: ${service.title}`,
+        handler: async function (response: any) {
+          if (response.razorpay_payment_id) {
+            await finalize(bookingPayload, response.razorpay_payment_id);
+          }
+        },
+        prefill: {
+          name: form.name,
+          email: form.email,
+          contact: form.phone,
+        },
+        theme: { color: "#289BD0" },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+      setSubmitting(false);
+    } else {
+      // Cash Flow
+      await finalize(bookingPayload);
+    }
+  }
+
+  async function finalize(payload: any, paymentId?: string) {
     const res = await fetch("/api/booking", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ service, date: date.toISOString().split("T")[0], slotId: time.slotId, duration, couponCode: coupon, discountAmount: discount, finalAmount: service.price - discount, form }),
+      body: JSON.stringify({ ...payload, razorpayPaymentId: paymentId }),
     });
-    if (res.ok) onSuccess({ baseAmount: service.price, discountAmount: discount, finalAmount: service.price - discount, couponCode: coupon });
+    
+    if (res.ok) {
+      onSuccess({ baseAmount: price, discountAmount: discount, finalAmount: finalAmount, couponCode: coupon });
+    }
     setSubmitting(false);
   }
 
@@ -228,10 +345,11 @@ function DetailsStep({ service, date, time, duration, form, setForm, onBack, onS
                {['QR', 'CASH'].map(m => (
                  <button 
                   key={m}
+                  type="button"
                   onClick={() => setForm({...form, payment: m})}
                   className={`flex-1 py-4 rounded-2xl font-bold transition-all border-2 ${form.payment === m ? 'border-black bg-black text-white' : 'border-[#F9F9F9] text-gray-400'}`}
                  >
-                   {m === 'QR' ? 'Scan QR' : 'Pay at Venue'}
+                   {m === 'QR' ? 'Pay Online (Razorpay)' : 'Pay at Venue'}
                  </button>
                ))}
              </div>
@@ -245,7 +363,7 @@ function DetailsStep({ service, date, time, duration, form, setForm, onBack, onS
           <Row label="Service" value={service.title} />
           <Row label="Date" value={date.toISOString().split("T")[0]} />
           <Row label="Time" value={time.label} />
-          <Row label="Amount" value={`₹${service.price}`} />
+          <Row label="Amount" value={`₹${price}`} />
           {discount > 0 && <Row label="Coupon" value={`-₹${discount}`} valueClass="text-[#00FF48] font-bold" />}
         </div>
         
@@ -256,20 +374,20 @@ function DetailsStep({ service, date, time, duration, form, setForm, onBack, onS
             onChange={e => setCoupon(e.target.value.toUpperCase())}
             className="rounded-xl border-none bg-white h-12"
           />
-          <Button onClick={applyCoupon} variant="outline" className="rounded-xl h-12 px-6">Apply</Button>
+          <Button onClick={() => handleApplyCoupon(coupon)} variant="outline" className="rounded-xl h-12 px-6">Apply</Button>
         </div>
 
         <div className="pt-6 border-t border-black/5">
           <div className="flex justify-between items-end mb-8">
             <span className="text-sm font-bold uppercase tracking-widest text-gray-400">Total Payable</span>
-            <span className="text-4xl font-light">₹{service.price - discount}</span>
+            <span className="text-4xl font-light">₹{finalAmount}</span>
           </div>
           <Button 
             disabled={submitting || !form.name || !form.phone}
             onClick={confirmBooking}
             className="w-full bg-[#289BD0] hover:bg-black text-white h-16 rounded-2xl text-xl font-bold shadow-lg shadow-blue-200"
           >
-            {submitting ? <Loader2 className="animate-spin" /> : "Confirm Booking"}
+            {submitting ? <Loader2 className="animate-spin" /> : (form.payment === "QR" ? "Pay & Book" : "Confirm Booking")}
           </Button>
           <Button variant="ghost" onClick={onBack} className="w-full mt-4 text-gray-400">Modify Selection</Button>
         </div>
@@ -281,7 +399,6 @@ function DetailsStep({ service, date, time, duration, form, setForm, onBack, onS
 /* ---------------- MAIN COMPONENT ---------------- */
 
 export default function BookingClient() {
-  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selection, setSelection] = useState<any>(null);
@@ -292,14 +409,13 @@ export default function BookingClient() {
   const [confirmed, setConfirmed] = useState<any>(null);
 
   useEffect(() => {
-    // Mimic the homepage loader feel
     setTimeout(() => setLoading(false), 500);
   }, []);
 
   if (confirmed) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-6">
-        <div className="max-w-2xl w-full bg-[#F9F9F9] rounded-[50px] p-12 text-center space-y-8">
+        <div className="max-w-2xl w-full bg-[#F9F9F9] rounded-[50px] p-12 text-center space-y-8 animate-in zoom-in-95 duration-500">
           <div className="w-24 h-24 bg-[#00FF48]/10 text-[#00FF48] rounded-full flex items-center justify-center mx-auto">
             <CheckCircle2 size={48} />
           </div>
@@ -317,14 +433,6 @@ export default function BookingClient() {
              </div>
           </div>
 
-          {confirmed.payment === "QR" && (
-            <div className="space-y-4">
-              <p className="text-sm font-bold uppercase tracking-[0.2em]">Scan to Secure Spot</p>
-              <img src="/qr.png" alt="QR" className="w-48 h-48 mx-auto rounded-3xl border-8 border-white shadow-sm" />
-              <p className="text-2xl font-light">₹{confirmed.finalAmount}</p>
-            </div>
-          )}
-
           <Button onClick={() => window.location.href = "/"} className="w-full h-16 rounded-2xl bg-black text-white text-lg">Back to Home</Button>
         </div>
       </div>
@@ -341,12 +449,28 @@ export default function BookingClient() {
       <ProgressBar step={step} total={3} />
 
       <div className="max-w-[1200px] mx-auto px-6">
-        {step === 1 && <ServiceStep onSelect={(d) => { setSelection(d); setPricing({ baseAmount: d.service.price, finalAmount: d.service.price }); setStep(2); }} />}
-        {step === 2 && <DateTimeStep date={date} time={time} onBack={() => setStep(1)} onNext={(d: any, t: any) => { setDate(d); setTime(t); setStep(3); }} />}
+        {step === 1 && (
+          <ServiceStep 
+            onSelect={(data) => { 
+              setSelection(data); 
+              setPricing({ baseAmount: data.price, finalAmount: data.price }); 
+              setStep(2); 
+            }} 
+          />
+        )}
+
+        {step === 2 && (
+          <DateTimeStep 
+            date={date} 
+            time={time} 
+            onBack={() => setStep(1)} 
+            onNext={(d: any, t: any) => { setDate(d); setTime(t); setStep(3); }} 
+          />
+        )}
+
         {step === 3 && selection && date && time && (
           <DetailsStep
-            service={selection.service}
-            duration={selection.duration}
+            selection={selection}
             date={date}
             time={time}
             form={form}
@@ -355,33 +479,29 @@ export default function BookingClient() {
             onPricingChange={setPricing}
             onSuccess={(pricingResult: any) => {
               setConfirmed({
-                service: selection.service, // Crucial: This adds the service back in
+                service: selection.service,
                 duration: selection.duration,
                 date: date.toISOString().split("T")[0],
                 time: time,
                 email: form.email,
                 payment: form.payment,
-                baseAmount: pricingResult.baseAmount,
-                discountAmount: pricingResult.discountAmount,
                 finalAmount: pricingResult.finalAmount,
-                couponCode: pricingResult.couponCode,
               });
             }}
           />
         )}
       </div>
 
-      {/* FLOATING SUMMARY (Mobile/Quick View) */}
       {selection && step > 1 && !confirmed && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 bg-black text-white px-8 py-4 rounded-full flex items-center gap-6 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-           <div className="flex items-center gap-2">
-             <Clock size={16} className="text-[#289BD0]" />
-             <span className="text-xs font-bold uppercase">{selection.duration}m</span>
-           </div>
-           <div className="h-4 w-[1px] bg-white/20" />
-           <span className="text-sm font-medium">{selection.service.title}</span>
-           <div className="h-4 w-[1px] bg-white/20" />
-           <span className="text-[#5DB4DB] font-bold">₹{pricing?.finalAmount}</span>
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-[#289BD0]" />
+              <span className="text-xs font-bold uppercase">{selection.duration}m</span>
+            </div>
+            <div className="h-4 w-[1px] bg-white/20" />
+            <span className="text-sm font-medium">{selection.service.title}</span>
+            <div className="h-4 w-[1px] bg-white/20" />
+            <span className="text-[#5DB4DB] font-bold">₹{pricing?.finalAmount}</span>
         </div>
       )}
     </div>

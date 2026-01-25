@@ -23,8 +23,6 @@ export default function AwarenessPage() {
   const [loading, setLoading] = useState(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     const fetchAwareness = async () => {
@@ -46,31 +44,31 @@ export default function AwarenessPage() {
   useEffect(() => {
     if (loading || !content.length) return;
 
-    // 1. Hero Entrance
     const ctx = gsap.context(() => {
+      // Hero Entrance
       gsap.fromTo(
         ".hero-content",
-        { y: 50, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, ease: "power3.out", delay: 0.3, stagger: 0.2 }
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, ease: "power2.out", stagger: 0.2 }
       );
 
-      // 2. Section Animations & Horizontal Scroll
+      // Section Animations
       const sections = gsap.utils.toArray(".awareness-section");
       sections.forEach((section: any) => {
         const benefitsRow = section.querySelector(".benefits-row");
         const internalGrid = section.querySelector(".section-grid");
 
-        // Fade in text/image grid
+        // Fade in grid
         gsap.from(internalGrid, {
-          y: 50,
+          y: 30,
           opacity: 0,
           scrollTrigger: {
             trigger: internalGrid,
-            start: "top 80%",
+            start: "top 85%",
           }
         });
 
-        // Horizontal scroll for benefits
+        // Horizontal scroll for benefits cards
         if (benefitsRow) {
           const scrollWidth = benefitsRow.scrollWidth;
           const amountToScroll = scrollWidth - window.innerWidth;
@@ -85,6 +83,7 @@ export default function AwarenessPage() {
               pin: true,
               scrub: 1,
               invalidateOnRefresh: true,
+              anticipatePin: 1,
             },
           });
         }
@@ -100,23 +99,24 @@ export default function AwarenessPage() {
 
       <main ref={containerRef} className="bg-white font-sans text-black">
         {/* ---------- HERO SECTION ---------- */}
-        <section ref={heroRef} className="min-h-[90vh] flex flex-col items-center justify-center relative px-6 py-20">
+        <section className="h-screen flex flex-col items-center justify-center relative overflow-hidden">
           <img
             src="/image/icebathhero.png"
             alt=""
-            className="absolute h-48 md:h-64 -z-10 opacity-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            className="absolute h-32 md:h-48 -z-10 opacity-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
           />
-          <div className="text-center space-y-6">
-            <h1 ref={titleRef} className="hero-content text-6xl md:text-8xl lg:text-[110px] leading-none font-bold tracking-tighter">
-              <span className="text-[#289BD0]">Cold</span> <br />
-              <span className="text-[#5DB4DB]">Awareness</span>
+          <div className="text-center">
+            <h1 className="hero-content text-7xl md:text-9xl font-thin tracking-tighter">
+              Cold <span className="text-[#289BD0]">Awareness</span>
             </h1>
-            <p className="hero-content mt-6 text-lg md:text-2xl font-light text-gray-500 max-w-xl mx-auto">
-              Evidence-based education to help you master the art of recovery.
+            <p className="hero-content mt-6 text-lg md:text-xl font-light text-gray-400 max-w-lg mx-auto px-6">
+              Master the science and protocols of deliberate cold exposure.
             </p>
           </div>
-          <div className="absolute bottom-10 animate-bounce text-[#289BD0] hidden md:block">
-            <span className="text-[10px] uppercase tracking-[0.5em] font-bold">Scroll to Learn</span>
+          
+          <div className="hero-content absolute bottom-12 flex flex-col items-center gap-2">
+            <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#289BD0]">Scroll to master</span>
+            <div className="w-[1px] h-12 bg-gray-100" />
           </div>
         </section>
 
@@ -124,78 +124,73 @@ export default function AwarenessPage() {
         {content.map((section, idx) => (
           <section
             key={section.id}
-            className="awareness-section min-h-screen flex flex-col justify-center relative overflow-hidden bg-white"
+            className="awareness-section min-h-screen flex flex-col justify-center relative bg-white border-t border-gray-50"
           >
-            <div className="section-grid max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center py-20">
+            <div className="section-grid max-w-[1080px] mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20 items-center py-32">
               
-              {/* Text Content - Alternates order on Desktop */}
-              <div className={`space-y-6 md:space-y-8 ${idx % 2 !== 0 ? 'lg:order-2' : ''}`}>
-                <div className="flex items-center gap-4">
-                  <span className="h-[1px] w-12 bg-[#289BD0] hidden md:block" />
-                  <span className="text-[#289BD0] font-bold text-xs uppercase tracking-[0.3em]">
-                    Phase 0{idx + 1}
-                  </span>
-                </div>
-                <h2 className="text-4xl md:text-6xl font-bold leading-tight tracking-tight">
-                  {section.title}
-                </h2>
-                <p className="text-base md:text-xl text-gray-600 leading-relaxed font-light max-w-lg">
-                  {section.description}
-                </p>
-              </div>
-
-              {/* Media Section - Reduced Size */}
-              <div className={`relative flex justify-center ${idx % 2 !== 0 ? 'lg:order-1' : ''}`}>
-                <div className="w-full max-w-[320px] md:max-w-md aspect-[4/5] rounded-[32px] overflow-hidden bg-[#F9F9F9] shadow-xl">
+              {/* Media - Square & Static */}
+              <div className={`relative ${idx % 2 !== 0 ? 'lg:order-2' : ''}`}>
+                <div className="w-full aspect-square rounded-[40px] overflow-hidden bg-[#F9F9F9]">
                   <img
                     src={section.media_url || "/image/blankimage.png"}
                     alt={section.title}
-                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
+                    className="w-full h-full object-cover"
                   />
                 </div>
-                <div className={`absolute -bottom-6 -right-6 w-32 h-32 -z-10 rounded-full blur-3xl opacity-30 ${idx % 2 === 0 ? 'bg-[#289BD0]' : 'bg-[#5DB4DB]'}`} />
+              </div>
+
+              {/* Text Content */}
+              <div className="space-y-8">
+                <div className="space-y-2">
+                  <span className="text-[#289BD0] font-black text-[10px] uppercase tracking-[0.4em]">
+                    Chapter 0{idx + 1}
+                  </span>
+                  <h2 className="text-5xl md:text-6xl font-semibold tracking-tight text-black">
+                    {section.title}
+                  </h2>
+                </div>
+
+                <p className="text-lg text-gray-500 leading-relaxed font-light">
+                  {section.description}
+                </p>
+
+                {/* Benefits List - Standardized UI Pattern */}
+                <div className="pt-4 space-y-3">
+                   <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-4">Core Principles</p>
+                   <ul className="grid grid-cols-1 gap-3">
+                    {section.benefits?.map((benefit, bIdx) => (
+                      <li key={bIdx} className="flex items-start text-sm text-black">
+                        <span className="mr-3 text-[#289BD0]">•</span>
+                        {benefit}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
 
-            {/* Horizontal Benefits Slider */}
-            {section.benefits && section.benefits.length > 0 && (
-              <div className="pb-24 overflow-hidden">
-                <div className="benefits-row flex flex-row flex-nowrap gap-8 md:gap-12 px-6 md:px-20">
-                  {section.benefits.map((benefit, bIdx) => (
-                    <div
-                      key={bIdx}
-                      className="bg-[#F9F9F9] flex-shrink-0 w-[280px] md:w-[450px] p-8 md:p-14 rounded-[32px] border border-gray-100 flex flex-col justify-between"
-                    >
-                      <span className="text-[#289BD0] text-xs font-black uppercase tracking-widest mb-6 block">
-                        Detail 0{bIdx + 1}
-                      </span>
-                      <p className="text-2xl md:text-4xl font-light text-black leading-tight">
-                        {benefit}
-                      </p>
-                    </div>
-                  ))}
-                  {/* Buffer for scroll ending */}
-                  <div className="flex-shrink-0 w-20 md:w-40 h-1" />
-                </div>
-              </div>
-            )}
+            {/* Horizontal Detail Cards - Matching "Why Chill Thrive" Horizontal Flow */}
+ 
           </section>
         ))}
 
-        <div className="bg-white py-10 md:py-20">
+        <div className="bg-white">
             <CallToAction />
         </div>
 
-        {/* ---------- MEDICAL DISCLAIMER ---------- */}
-        <footer className="py-20 px-6 bg-white border-t border-gray-100">
-          <div className="max-w-3xl mx-auto">
-            <div className="flex flex-col md:flex-row gap-6 items-start text-gray-400 italic text-sm leading-relaxed border-l-2 border-gray-200 pl-6">
-              <p>
-                <strong className="text-gray-900 not-italic uppercase tracking-widest text-[10px] block mb-2">Medical Disclaimer</strong>
-                The information provided here is for educational purposes only 
-                and is not intended as medical advice. Always consult with a qualified healthcare 
-                professional before starting cold therapy protocols.
-              </p>
+        {/* ---------- FOOTER / DISCLAIMER ---------- */}
+        <footer className="py-24 px-6 bg-white border-t border-gray-100">
+          <div className="max-w-[1080px] mx-auto">
+            <div className="flex flex-col md:flex-row gap-8 items-start text-gray-400 text-sm leading-relaxed border-l border-gray-200 pl-8">
+              <div className="max-w-2xl">
+                <strong className="text-black uppercase tracking-[0.2em] text-[10px] block mb-4 font-bold">Scientific & Medical Disclaimer</strong>
+                <p className="font-light italic">
+                  The content provided within the Awareness portal is for informational and educational purposes only. 
+                  Deliberate cold exposure involves physiological stress; please consult with your physician to ensure 
+                  you do not have underlying cardiovascular or respiratory conditions that contraindicate cold therapy. 
+                  Mastery comes through consistency and safety.
+                </p>
+              </div>
             </div>
           </div>
         </footer>

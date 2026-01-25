@@ -4,9 +4,7 @@ import { supabase } from "@/lib/supabase/client";
 import { Service } from "@/lib/types/service";
 import { useEffect, useRef, useState } from "react";
 
-// import WhyChillThrive from "./components/WhyChillThrive";
 import CallToAction from "./components/CallToAction";
-// import TestimonialsPreview from "./components/TestimonialsPreview";
 import FullPageLoader from "../../components/FullPageLoader";
 import {
   Card,
@@ -15,11 +13,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger"
-
-
-gsap.registerPlugin(ScrollTrigger);
-
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -47,59 +41,51 @@ const reasons = [
 ];
 
 function WhyChillThrive() {
+  const containerWhyRef = useRef<HTMLDivElement>(null);
+  const el1WhyRef = useRef<HTMLDivElement>(null);
+  const el2WhyRef = useRef<HTMLDivElement>(null);
 
-  
-    const containerWhyRef = useRef<HTMLDivElement>(null);
-    const el1WhyRef = useRef<HTMLDivElement>(null);
-    const el2WhyRef = useRef<HTMLDivElement>(null);
-  
-    useEffect(() => {
-      if (!containerWhyRef.current || !el1WhyRef.current || !el2WhyRef.current) return;
-  
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerWhyRef.current,
-          start: "top top",
-          end: "+=175%",      // scroll distance controls timing
-          pin: true,          // 🔒 pinned screen
-          // pinSpacing: false,
-          scrub: true,
-        },
-      });
-  
-      tl
-        // Element 1
-        .fromTo(
-          el1WhyRef.current,
-          { opacity: 0 },
-          {
-            opacity: 1,
-            duration: 0.8,
-            ease: "power2.out",
-          }
-        )
-  
-        // Element 2
-        .fromTo(
-          el2WhyRef.current,
-          { x:"50vw" },
-          {
-            x:"-100vw",
-            duration: 0.2,
-            ease: "power2.out",
-          }
-        )
+  useEffect(() => {
+    if (!containerWhyRef.current || !el1WhyRef.current || !el2WhyRef.current) return;
 
-  
-      return () => {
-        tl.scrollTrigger?.kill();
-        tl.kill();
-      };
-    }, []);
-  
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: containerWhyRef.current,
+        start: "top top",
+        end: "+=175%",
+        pin: true,
+        scrub: true,
+      },
+    });
+
+    tl
+      .fromTo(
+        el1WhyRef.current,
+        { opacity: 0 },
+        {
+          opacity: 1,
+          duration: 0.8,
+          ease: "power2.out",
+        }
+      )
+      .fromTo(
+        el2WhyRef.current,
+        { x:"50vw" },
+        {
+          x:"-100vw",
+          duration: 0.2,
+          ease: "power2.out",
+        }
+      )
+
+    return () => {
+      tl.scrollTrigger?.kill();
+      tl.kill();
+    };
+  }, []);
+
   return (
-    <section ref={containerWhyRef} className=" mx-auto relative h-screen overflow-hidden">
-      {/* <div ref={containerWhyRef} className="h-[1px]" /> */}
+    <section ref={containerWhyRef} className="mx-auto relative h-screen overflow-hidden">
       <h2 ref={el1WhyRef} className="text-9xl font-light mb-8 text-center absolute top-[calc(50vh-15px)] w-full">
         Why Chill Thrive
       </h2>
@@ -125,7 +111,6 @@ function WhyChillThrive() {
   );
 }
 
-
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -138,7 +123,6 @@ type TestimonialPreview = {
   thumbnail_url?: string | null;
   rating?: number | null;
 };
-
 function TestimonialsPreview() {
   const router = useRouter();
   const [testimonials, setTestimonials] = useState<TestimonialPreview[]>([]);
@@ -150,7 +134,7 @@ function TestimonialsPreview() {
         .select("id,type,name,feedback,video_url,thumbnail_url,rating")
         .eq("is_visible", true)
         .order("created_at", { ascending: false })
-        .limit(3); // Limited to 3 for a cleaner grid row
+        .limit(3);
 
       if (!error && data) {
         setTestimonials(data);
@@ -163,68 +147,63 @@ function TestimonialsPreview() {
   if (testimonials.length === 0) return null;
 
   return (
-    <section className="max-w-[1080px] mx-auto py-24 px-6 space-y-12">
-      {/* ---------- HEADER ---------- */}
-      <div className="flex items-end justify-between border-b border-gray-100 pb-8">
-        <div className="space-y-2">
-          <h2 className="text-6xl font-bold tracking-tighter">
-            Community <span className="text-[#289BD0]">Stories</span>
+    <section className="max-w-[1080px] mx-auto py-24 px-4 sm:px-6 space-y-12">
+      {/* Header aligned with "Our Services" style */}
+      <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between border-b border-gray-100 pb-8 gap-4">
+        <div className="space-y-2 text-center sm:text-left">
+          <h2 className="text-5xl md:text-6xl font-semibold tracking-tighter">
+            Community Stories
           </h2>
-          <p className="text-gray-400 font-light text-xl">Real people. Real recovery.</p>
+          <p className="text-gray-400 font-light text-lg">Real people. Real recovery.</p>
         </div>
 
         <Button
           variant="ghost"
           onClick={() => router.push("/testimonials")}
-          className="text-sm font-bold uppercase tracking-[0.2em] text-[#289BD0] hover:bg-transparent hover:text-black transition-colors"
+          className="text-xs font-bold uppercase tracking-[0.2em] text-[#289BD0] hover:bg-transparent transition-colors"
         >
           View All Stories →
         </Button>
       </div>
 
-      {/* ---------- PREVIEW GRID ---------- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* Grid using the Service Card layout logic */}
+      <div className="flex flex-wrap justify-center gap-6 sm:gap-10 md:gap-12">
         {testimonials.map((t) => (
           <div 
             key={t.id} 
-            className="bg-[#F9F9F9] p-8 rounded-[40px] flex flex-col justify-between space-y-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-500 group"
+            className="bg-[#F9F9F9] p-4 w-full sm:w-[calc(50%-12px)] md:w-[312px] h-fit flex flex-col items-start"
           >
-            <div className="space-y-4">
-              {/* Star Rating */}
-              <div className="flex text-[#289BD0] text-sm">
-                {"★".repeat(t.rating ?? 5)}
-              </div>
-
+            {/* Square Thumbnail - Matching Service Card Media */}
+            <div className="w-full h-[85vw] sm:h-[calc(50%-12px)] md:h-[312px] overflow-hidden rounded-3xl bg-gray-200">
               {t.type === "video" && t.video_url ? (
-                <div className="relative aspect-video rounded-[24px] overflow-hidden bg-black shadow-inner">
-                  <iframe
-                    src={t.video_url}
-                    className="w-full h-full"
-                    allowFullScreen
-                  />
-                </div>
+                <iframe
+                  src={t.video_url.replace("watch?v=", "embed/")}
+                  className="w-full h-full object-cover"
+                  allowFullScreen
+                />
               ) : (
-                <p className="text-gray-700 leading-relaxed italic line-clamp-4">
-                  “{t.feedback}”
-                </p>
+                <img 
+                  src={t.thumbnail_url || "/image/blankimage.png"} 
+                  alt={t.name}
+                  className="w-full h-full object-cover"
+                />
               )}
             </div>
 
-            {/* Profile Footer */}
-            <div className="flex items-center gap-4 pt-4 border-t border-gray-200/50">
-              <div className="relative">
-                <img 
-                  src={t.thumbnail_url || "/image/default-avatar.png"} 
-                  alt={t.name}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-white group-hover:border-[#289BD0] transition-colors"
-                />
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#00FF48] border-2 border-white rounded-full" />
-              </div>
+            <div className="flex flex-row w-full justify-between items-start mt-4 mb-2">
               <div className="flex flex-col">
-                <span className="font-bold text-lg leading-none">{t.name}</span>
-                <span className="text-[10px] uppercase tracking-widest text-gray-400 font-black mt-1">Verified Member</span>
+                <span className="text-xl font-semibold leading-tight">{t.name}</span>
+                <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mt-1">Verified Member</span>
+              </div>
+              
+              <div className="text-[#289BD0] text-sm">
+                {"★".repeat(t.rating ?? 5)}
               </div>
             </div>
+
+            <p className="text-sm text-gray-600 line-clamp-4 leading-relaxed italic">
+              {t.feedback ? `"${t.feedback}"` : "Experience shared via video."}
+            </p>
           </div>
         ))}
       </div>
@@ -232,11 +211,9 @@ function TestimonialsPreview() {
   );
 }
 
-
 export default function Home() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-
 
   useEffect(() => {
     const fetchRandomServices = async () => {
@@ -247,39 +224,31 @@ export default function Home() {
 
       if (error || !data) return;
 
-      // shuffle client-side
       const shuffled = [...data].sort(() => 0.5 - Math.random());
 
       const normalized: Service[] = shuffled.slice(0, 3).map((s) => ({
         id: s.id,
-        slug: "", // not needed here, keep empty or remove from interface if unused
+        slug: "",
         title: s.title,
-        type: "single", // or infer if needed
-
-        mediaUrl: s.media_url,        // ✅ FIX
-        mediaType: s.media_type,      // ✅ FIX
-        ytUrl: s.yt_url ?? undefined, // ✅ FIX
-
+        type: "single",
+        mediaUrl: s.media_url,
+        mediaType: s.media_type,
+        ytUrl: s.yt_url ?? undefined,
         description: s.description,
-
         durationMinutes: [],
         benefits: [],
-
         price: 0,
         currency: "INR",
-
         isActive: true,
         createdAt: "",
       }));
 
       setServices(normalized);
-
       setTimeout(() => setLoading(false), 300);
     };
 
     fetchRandomServices();
   }, []);
-
 
   const containerRef = useRef<HTMLDivElement>(null);
   const el1Ref = useRef<HTMLDivElement>(null);
@@ -297,15 +266,14 @@ export default function Home() {
       scrollTrigger: {
         trigger: containerRef.current,
         start: "top top",
-        end: "+=175%",      // scroll distance controls timing
-        pin: true,          // 🔒 pinned screen
-        scrub: true,        // 🔗 scroll linked
+        end: "+=175%",
+        pin: true,
+        scrub: true,
         anticipatePin: 1,
       },
     });
 
     tl
-      // Element 1
       .fromTo(
         el1Ref.current,
         { y: 20 },
@@ -315,13 +283,6 @@ export default function Home() {
           ease: "power2.out",
         }
       )
-      // .to(el1Ref.current, {
-      //   y: -60,             // moves up → creates space
-      //   duration: 0.6,
-      //   ease: "power2.out",
-      // })
-
-      // Element 2
       .fromTo(
         el2Ref.current,
         { opacity: 0, y: 20 },
@@ -332,12 +293,6 @@ export default function Home() {
           ease: "power2.in",
         }
       )
-      // .to(el2Ref.current, {
-      //   y: -60,
-      //   duration: 0.6,
-      //   ease: "power2.out",
-      // });
-
       .fromTo(
         el3Ref.current,
         { opacity: 0},
@@ -347,20 +302,6 @@ export default function Home() {
           ease: "power2.in",
         }
       )
-      // .fromTo(
-      //   "#book",
-      //   {scale: 1, color:"#000000", padding:"0px"},
-      //   {
-      //     color: "#289BD0", border:"1px solid black", padding:"5px",
-      //     duration: 0.2,
-      //     ease: "linear",
-      //   }
-      // )
-      // .to(
-      //   "#book",
-      //   {scale: 1, color:"#000000", border:"0px"},
-      // )
-      // .
 
     return () => {
       tl.scrollTrigger?.kill();
@@ -375,31 +316,23 @@ export default function Home() {
       scrollTrigger: {
         trigger: container2Ref.current,
         start: "top top",
-        end: "+=225%",      // scroll distance controls timing
-        pin: true,          // 🔒 pinned screen
-        scrub: true,        // 🔗 scroll linked
+        end: "+=200%",
+        pin: true,
+        scrub: true,
         anticipatePin: 1,
       },
     });
 
     tl
-      // Element 1
       .fromTo(
         el1C2Ref.current,
         { opacity: 1 },
         {
           opacity: 0,
-          duration: 0.5,
+          duration: 0.2,
           ease: "sine",
         }
       )
-      // .to(el1Ref.current, {
-      //   y: -60,             // moves up → creates space
-      //   duration: 0.6,
-      //   ease: "power2.out",
-      // })
-
-      // Element 2
       .fromTo(
         el2C2Ref.current,
         { opacity: 0 },
@@ -409,12 +342,6 @@ export default function Home() {
           ease: "power2.out",
         }
       )
-      // .to(el2Ref.current, {
-      //   y: -60,
-      //   duration: 0.6,
-      //   ease: "power2.out",
-      // });
-
       .fromTo(
         el3Ref.current,
         { opacity: 0},
@@ -424,20 +351,6 @@ export default function Home() {
           ease: "power2.out",
         }
       )
-      // .fromTo(
-      //   "#book",
-      //   {scale: 1, color:"#000000", padding:"0px"},
-      //   {
-      //     color: "#289BD0", border:"1px solid black", padding:"5px",
-      //     duration: 0.2,
-      //     ease: "linear",
-      //   }
-      // )
-      // .to(
-      //   "#book",
-      //   {scale: 1, color:"#000000", border:"0px"},
-      // )
-      // .
 
     return () => {
       tl.scrollTrigger?.kill();
@@ -445,151 +358,130 @@ export default function Home() {
     };
   }, []);
 
-    
-    const containerWhyRef = useRef<HTMLDivElement>(null);
-    const el1WhyRef = useRef<HTMLDivElement>(null);
-    const el2WhyRef = useRef<HTMLDivElement>(null);
-  
-    useEffect(() => {
-      if (!containerWhyRef.current || !el1WhyRef.current || !el2WhyRef.current) return;
-  
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerWhyRef.current,
-          start: "top top",
-          end: "+=300%",      // scroll distance controls timing
-          pin: true,          // 🔒 pinned screen
-          // pinSpacing: false,
-          scrub: true,
-        },
-      });
-  
-      tl
-        // Element 1
-        .fromTo(
-          el1WhyRef.current,
-          { opacity: 0 },
-          {
-            opacity: 1,
-            duration: 0.4,
-            ease: "power2.out",
-          }
-        )
-  
-        // Element 2
-        .fromTo(
-          el2WhyRef.current,
-          { x:"0vw" },
-          {
-            x:"-230vw",
-            duration: 1.5,
-            ease: "power2.out",
-          }
-        )
+  const containerWhyRef = useRef<HTMLDivElement>(null);
+  const el1WhyRef = useRef<HTMLDivElement>(null);
+  const el2WhyRef = useRef<HTMLDivElement>(null);
 
-  
-      return () => {
-        tl.scrollTrigger?.kill();
-        tl.kill();
-      };
-    }, []);
+  useEffect(() => {
+    if (!containerWhyRef.current || !el1WhyRef.current || !el2WhyRef.current) return;
 
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: containerWhyRef.current,
+        start: "top top",
+        end: "+=300%",
+        pin: true,
+        scrub: true,
+      },
+    });
+
+    tl
+      .fromTo(
+        el1WhyRef.current,
+        { opacity: 0 },
+        {
+          opacity: 1,
+          duration: 0.4,
+          ease: "power2.out",
+        }
+      )
+      .fromTo(
+        el2WhyRef.current,
+        { x:"0vw" },
+        {
+          x:"-230vw",
+          duration: 1.5,
+          ease: "power2.out",
+        }
+      )
+
+    return () => {
+      tl.scrollTrigger?.kill();
+      tl.kill();
+    };
+  }, []);
 
   return (
     <>
       <FullPageLoader visible={loading} />
-        <section id="hero" className="font-sans">
-          <section ref={containerRef} className="h-screen flex justify-center">
-            <div className="flex items-center justify-center mx-auto">
-              <img src="/image/icebathhero.png" alt="" className="absolute h-40 -z-10 opacity-50 top-18" />
-              <div className="flex flex-col ml-5 items-center">
-                {/* <span className="text-[84px] leading-[80px]">Welcome to</span> */}
-                <div ref={el1Ref} className="flex flex-row">
-                  <span className="text-[115px] leading-[100px] text-[#289BD0]">Chill&nbsp;</span>
-                  <span className="text-[115px] leading-[100px] text-[#5DB4DB]">Thrive</span>
-                </div>
-                <span ref={el2Ref} className="text-[28px] mt-3 font-[400]">Here <a href="" className="underline text-[#00FF48]">Recovery</a> Meets Resilience</span>
-                <span ref={el3Ref} className="absolute top-[calc(64vh)] text-center text-[22px] mt-9 font-[400]">Rejuvenate your body <br />
-                      Reset your mind</span>
+      <section id="hero" className="font-sans">
+        <section ref={containerRef} className="h-screen flex justify-center">
+          <div className="flex items-center justify-center mx-auto px-4">
+            <img src="/image/icebathhero.png" alt="" className="absolute h-24 sm:h-32 md:h-40 -z-10 opacity-50 top-30 sm:top-16 md:top-18" />
+            <div className="flex flex-col ml-0 sm:ml-5 items-center">
+              <div ref={el1Ref} className="flex flex-col items-center sm:flex-row">
+                <span className="text-[80px] sm:text-[80px] md:text-[100px] lg:text-[115px] leading-[76px] sm:leading-[76px] md:leading-[96px] lg:leading-[100px] text-[#289BD0]">Chill&nbsp;</span>
+                <span className="text-[80px] sm:text-[80px] md:text-[100px] lg:text-[115px] leading-[76px] sm:leading-[76px] md:leading-[96px] lg:leading-[100px] text-[#5DB4DB]">Thrive</span>
               </div>
+              <span ref={el2Ref} className="text-[32px] sm:text-[22px] md:text-[26px] lg:text-[28px] mt-3 font-[400] text-center px-4">
+                Here <a href="/awareness" className="underline text-[#00FF48]">Recovery</a> Meets Resilience
+              </span>
+              <span ref={el3Ref} className="absolute top-[70vh] md:top-[calc(64vh)] text-center text-[25px] sm:text-[18px] md:text-[20px] lg:text-[22px] mt-9 font-[400] px-4">
+                Rejuvenate your body <br />
+                Reset your mind
+              </span>
             </div>
-
-            {/* <div className="my-12 flex justify-center text-[32px]">
-              <a className="rounded-2xl underline hover:no-underline" href="/booking">Book</a>&nbsp;a session right now
-            </div> */}
-          </section>
-          
-          <section ref={container2Ref} className="min-h-screen mx-auto relative">
-            <br />
-              <div ref={el1C2Ref} className="text-black my-12 flex text-[92px] font-[500] justify-center mb-10 absolute left-[calc(50vw-290px)] top-[calc(48vh-110px)]">
-                <a className="rounded-2xl" href="/services">Our Services</a>
-              </div>
-
-              <div ref={el2C2Ref} className="flex items-center justify-center flex-wrap gap-15 w-[1080px] mx-auto h-screen">
-                {services.map((s, i) => (
-                  <div className="bg-[#F9F9F9] p-4 w-[312px] h-fit flex flex-col items-start" key={s.id ?? i}>
-                    <img
-                      className="w-full  rounded-3xl object-cover"
-                      src={s.mediaUrl || "/image/blankimage.png"}
-                      alt={s.title}
-                    />
-
-                      <div className="flex flex-rol w-full justify-between items-end mt-4 mb-2">
-                        <span className="text-2xl font-semibold">
-                          {s.title}
-                        </span>
-
-                        <a href="/services">
-                          <img
-                            className="bg-[#289BD0] h-7 w-7 p-2.25 rounded-lg"
-                            src="/image/arrow01.svg"
-                            alt="View service"
-                          />
-                        </a>
-                      </div>
-
-                      <span className="line-clamp-3 text-sm">
-                        {s.description}
-                      </span>
-                  </div>
-                ))}
-              </div>
-          </section>
-          {/* <WhyChillThrive /> */}
-              <section ref={containerWhyRef} className=" mx-auto relative h-screen overflow-hidden">
-                  {/* <div ref={containerWhyRef} className="h-[1px]" /> */}
-                  <h2 ref={el1WhyRef} className="text-9xl font-light mb-8 text-center absolute top-[calc(50vh-60px)] w-full">
-                    Why Chill Thrive
-                  </h2>
-
-                  <div ref={el2WhyRef} className="absolute z-50 top-[calc(50vh-100px)] left-[calc(100vw)] flex flex-row flex-nowrap gap-70">
-                    {reasons.map((item, index) => (
-                      // <Card
-                      //   key={index}
-                      //   className="bg-white"
-                      // >
-                      //   <CardHeader className="space-y-2 w-120">
-                      //     <CardTitle className="text-5xl font-regular">
-                      //       {item.title}
-                      //     </CardTitle>
-                      //     <CardDescription className="text-xl font-light">
-                      //       {item.description}
-                      //     </CardDescription>
-                      //   </CardHeader>
-                      // </Card>
-                      <div
-                        key={index}
-                        className={`bg-white w-[40vw] p-5 border-2`}
-                      >
-                        <h1 className="text-7xl">{item.title}</h1>
-                        <p className="mt-5">{item.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-          <TestimonialsPreview />
-          <CallToAction />
+          </div>
         </section>
+        
+        <section ref={container2Ref} className="min-h-screen mx-auto relative">
+          <br />
+          <div ref={el1C2Ref} className="text-black flex w-[100%] md:w-fit text-[50px] sm:text-[64px] md:text-[80px] lg:text-[92px] font-[500] justify-center absolute left-[50%] -translate-x-1/2 md:left-[calc(50vw-290px)] md:translate-x-0 leading-[100vh] top-0">
+            <a href="/services">Our Services</a>
+          </div>
+
+          <div ref={el2C2Ref} className="flex  items-center mt-20 md:mt-0 justify-center flex-wrap gap-6 sm:gap-10 md:gap-12 w-full max-w-[1080px] mx-auto h-screen px-4">
+            {services.map((s, i) => (
+              <div className="bg-[#F9F9F9] z-10 relative  p-4 w-full sm:w-[calc(50%-12px)] md:w-[312px] h-fit flex flex-col items-start" key={s.id ?? i}>
+                <img
+                  className="w-full h-[85vw] sm:h-[calc(50%-12px)] md:h-[312px] rounded-3xl object-cover"
+                  src={s.mediaUrl || "/image/blankimage.png"}
+                  alt={s.title}
+                />
+
+                <div className="flex flex-row w-full justify-between items-end mt-4 mb-2">
+                  <span className="text-xl sm:text-2xl font-semibold">
+                    {s.title}
+                  </span>
+
+                  <a href="/services">
+                    <img
+                      className="bg-[#289BD0] h-7 w-7 p-2.25 rounded-lg"
+                      src="/image/arrow01.svg"
+                      alt="View service"
+                    />
+                  </a>
+                </div>
+
+                <span className="line-clamp-3 text-sm">
+                  {s.description}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section ref={containerWhyRef} className="mx-auto relative h-screen overflow-hidden">
+          <h2 ref={el1WhyRef} className="text-5xl z-0 sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-light mb-8 text-center absolute top-[calc(50vh-60px)] w-full px-4">
+            Why Chill Thrive
+          </h2>
+
+          <div ref={el2WhyRef} className="absolute z-50 top-[calc(50vh-100px)] left-[calc(100vw)] flex flex-row flex-nowrap gap-10 sm:gap-20 md:gap-40 lg:gap-70">
+            {reasons.map((item, index) => (
+              <div
+                key={index}
+                className="bg-white w-[80vw] sm:w-[60vw] md:w-[50vw] lg:w-[40vw] p-4 sm:p-5 border-2"
+              >
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl">{item.title}</h1>
+                <p className="mt-3 sm:mt-4 md:mt-5 text-sm sm:text-base md:text-lg">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <TestimonialsPreview />
+        <CallToAction />
+      </section>
     </>
   );
 }

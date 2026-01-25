@@ -5,10 +5,12 @@ import { supabase } from '@/lib/supabase/client';
 import {
   Search, Trash2, Loader2, 
   IndianRupee, Phone, Mail, 
-  ChevronDown, Calendar, Clock, TrendingUp
+  ChevronDown, Calendar, Clock, TrendingUp,
+  XCircle, CheckCircle2
 } from 'lucide-react';
 
 /* ---------- TYPES ---------- */
+
 interface Booking {
   id: string;
   created_at: string;
@@ -24,13 +26,17 @@ interface Booking {
   final_amount: number;
   status: 'confirmed' | 'pending' | 'cancelled';
   coupon_code?: string;
+  slot_timings: {
+    start_time: string;
+    end_time: string;
+  } | null;
 }
 
 export default function AdminBookings() {
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [viewMode, setViewMode] = useState<'active' | 'cancelled'>('active');
 
   /* ---------- FETCH DATA ---------- */
   useEffect(() => {
@@ -41,30 +47,36 @@ export default function AdminBookings() {
     setLoading(true);
     const { data, error } = await supabase
       .from('bookings')
-      .select('*')
+      .select(`
+        *,
+        slot_timings (
+          start_time,
+          end_time
+        )
+      `)
       .order('booking_date', { ascending: false });
     
-    if (data) setBookings(data);
+    if (data) setBookings(data as unknown as Booking[]);
     if (error) console.error("Fetch Error:", error.message);
     setLoading(false);
   };
 
   const updateStatus = async (id: string, status: Booking['status']) => {
+    // REQUIREMENT: No longer auto-deleting. Just updating the record.
     setBookings(prev => prev.map(x => x.id === id ? { ...x, status } : x));
     const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
     if (error) {
       alert("Failed to update status");
-      fetchBookings(); // Rollback
+      fetchBookings(); 
     }
   };
 
   const handleDelete = async (id: string) => {
-    const confirmed = window.confirm("Permanently delete this reservation?");
+    const confirmed = window.confirm("Permanently delete this record from history?");
     if (!confirmed) return;
 
     setBookings(prev => prev.filter(b => b.id !== id));
     const { error } = await supabase.from('bookings').delete().eq('id', id);
-    
     if (error) {
       alert("Error deleting record");
       fetchBookings();
@@ -75,17 +87,20 @@ export default function AdminBookings() {
   const stats = {
     revenue: bookings.filter(b => b.status === 'confirmed').reduce((acc, curr) => acc + curr.final_amount, 0),
     pending: bookings.filter(b => b.status === 'pending').length,
-    today: bookings.filter(b => b.booking_date === new Date().toISOString().split('T')[0]).length
+    cancelled: bookings.filter(b => b.status === 'cancelled').length
   };
 
   const filteredBookings = bookings.filter(b => {
     const matchesSearch = 
       b.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      b.customer_phone.includes(searchTerm) ||
-      b.service_title.toLowerCase().includes(searchTerm.toLowerCase());
+      b.customer_phone.includes(searchTerm);
     
-    const matchesStatus = statusFilter === 'All' || b.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    // REQUIREMENT: Filter based on toggle mode
+    const matchesView = viewMode === 'active' 
+      ? (b.status === 'pending' || b.status === 'confirmed')
+      : b.status === 'cancelled';
+
+    return matchesSearch && matchesView;
   });
 
   if (loading) return (
@@ -101,16 +116,36 @@ export default function AdminBookings() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Reservations</h1>
-          <p className="text-slate-500 font-medium text-sm">View and manage all customer appointments</p>
+          <p className="text-slate-500 font-medium text-sm">Review and manage your booking history</p>
+        </div>
+
+        {/* REQUIREMENT: VIEW TOGGLE BUTTON */}
+        <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+          <button 
+            onClick={() => setViewMode('active')}
+            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+              viewMode === 'active' ? 'bg-[#0A2540] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Active
+          </button>
+          <button 
+            onClick={() => setViewMode('cancelled')}
+            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+              viewMode === 'cancelled' ? 'bg-red-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Cancelled
+          </button>
         </div>
       </div>
 
       {/* STATS RIBBON */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { label: 'Confirmed Revenue', value: `₹${stats.revenue.toLocaleString()}`, icon: <TrendingUp className="text-green-600" />, bg: 'bg-green-50' },
+          { label: 'Total Revenue', value: `₹${stats.revenue.toLocaleString()}`, icon: <TrendingUp className="text-emerald-600" />, bg: 'bg-emerald-50' },
           { label: 'Pending Requests', value: stats.pending, icon: <Clock className="text-amber-600" />, bg: 'bg-amber-50' },
-          { label: 'Today\'s Bookings', value: stats.today, icon: <Calendar className="text-blue-600" />, bg: 'bg-blue-50' }
+          { label: 'Cancelled count', value: stats.cancelled, icon: <XCircle className="text-red-600" />, bg: 'bg-red-50' }
         ].map((stat, i) => (
           <div key={i} className={`${stat.bg} p-6 rounded-2xl border border-white shadow-sm flex items-center justify-between`}>
             <div>
@@ -123,59 +158,48 @@ export default function AdminBookings() {
       </div>
 
       <div className="space-y-6">
-        {/* SEARCH & FILTER BAR */}
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
-            <input 
-              placeholder="Search bookings..." 
-              className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 transition-all shadow-sm"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="relative">
-            <select 
-              className="appearance-none pl-6 pr-12 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 outline-none shadow-sm cursor-pointer focus:ring-2 focus:ring-slate-900"
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-            >
-              <option value="All">All Status</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="pending">Pending</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            <ChevronDown className="absolute right-4 top-4 text-slate-400 pointer-events-none" size={16} />
-          </div>
+        {/* SEARCH BAR */}
+        <div className="relative">
+          <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+          <input 
+            placeholder="Search by customer name or phone..." 
+            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 transition-all shadow-sm font-medium"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
         </div>
 
         {/* TABLE */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-900 text-white">
-                  <th className="p-5 text-[10px] font-black uppercase tracking-widest">Customer Details</th>
-                  <th className="p-5 text-[10px] font-black uppercase tracking-widest">Service & Date</th>
+                  <th className="p-5 text-[10px] font-black uppercase tracking-widest">Client</th>
+                  <th className="p-5 text-[10px] font-black uppercase tracking-widest">Service Details</th>
                   <th className="p-5 text-[10px] font-black uppercase tracking-widest">Payment</th>
                   <th className="p-5 text-[10px] font-black uppercase tracking-widest">Status</th>
-                  <th className="p-5 text-[10px] font-black uppercase tracking-widest text-right">Manage</th>
+                  <th className="p-5 text-[10px] font-black uppercase tracking-widest text-right">Delete</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredBookings.map((b) => (
-                  <tr key={b.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={b.id} className={`hover:bg-slate-50 transition-colors ${viewMode === 'cancelled' && 'opacity-75'}`}>
                     <td className="p-5">
-                      <div className="font-black text-slate-800">{b.customer_name}</div>
-                      <div className="flex flex-col gap-1 mt-1">
-                        <span className="text-xs text-slate-400 flex items-center gap-1.5 font-medium"><Mail size={12}/> {b.customer_email}</span>
-                        <span className="text-xs text-slate-400 flex items-center gap-1.5 font-medium"><Phone size={12}/> {b.customer_phone}</span>
+                      <div className="font-black text-slate-800 uppercase tracking-tighter">{b.customer_name}</div>
+                      <div className="flex flex-col gap-1 mt-1 font-medium">
+                        <span className="text-xs text-slate-400 flex items-center gap-1.5"><Mail size={12}/> {b.customer_email}</span>
+                        <span className="text-xs text-slate-400 flex items-center gap-1.5"><Phone size={12}/> {b.customer_phone}</span>
                       </div>
                     </td>
                     <td className="p-5">
                       <div className="text-sm font-bold text-slate-700">{b.service_title}</div>
                       <div className="text-[10px] text-indigo-500 font-black mt-1 uppercase tracking-tighter">
                         {new Date(b.booking_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-bold mt-1 flex items-center gap-1">
+                        <Clock size={10} className="text-slate-400" />
+                        {b.slot_timings ? `${b.slot_timings.start_time.slice(0, 5)} - ${b.slot_timings.end_time.slice(0, 5)}` : 'N/A'}
                       </div>
                     </td>
                     <td className="p-5">
@@ -191,8 +215,8 @@ export default function AdminBookings() {
                       <div className="relative inline-block w-full">
                         <select 
                           className={`w-full appearance-none text-[10px] font-black pl-3 pr-8 py-2 rounded-lg border-0 outline-none cursor-pointer transition-colors shadow-sm ${
-                            b.status === 'confirmed' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 
-                            b.status === 'pending' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-red-100 text-red-700 hover:bg-red-200'
+                            b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 
+                            b.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                           }`}
                           value={b.status}
                           onChange={e => updateStatus(b.id, e.target.value as any)}
@@ -202,7 +226,7 @@ export default function AdminBookings() {
                           <option value="cancelled">CANCELLED</option>
                         </select>
                         <ChevronDown className={`absolute right-2 top-2.5 pointer-events-none ${
-                           b.status === 'confirmed' ? 'text-green-500' : 
+                           b.status === 'confirmed' ? 'text-emerald-500' : 
                            b.status === 'pending' ? 'text-amber-500' : 'text-red-500'
                         }`} size={12} />
                       </div>
@@ -221,8 +245,11 @@ export default function AdminBookings() {
             </table>
           </div>
           {filteredBookings.length === 0 && (
-            <div className="p-20 text-center text-slate-300 font-black uppercase text-xs tracking-widest">
-              No reservations found
+            <div className="p-24 text-center">
+                <div className="inline-flex p-4 bg-slate-50 rounded-full mb-4">
+                    <Calendar size={32} className="text-slate-300" />
+                </div>
+                <p className="text-slate-400 font-black uppercase text-xs tracking-[0.2em]">No {viewMode} reservations found</p>
             </div>
           )}
         </div>

@@ -85,78 +85,18 @@ export default function Services() {
     
 
     return (
-      // <article
-      //   key={s.id}
-      //   className="border rounded-lg bg-white shadow hover:shadow-lg transition overflow-hidden"
-      // >
-      //   <img
-      // src={s.mediaUrl || "/placeholder.jpg"}
-      // alt={s.title}
-      //     className="w-full h-40 object-cover"
-      //   />
-
-      //   <div className="p-4 space-y-4">
-      //     <div>
-      //       <h2 className="text-xl font-semibold">{s.title}</h2>
-      //       <p className="text-sm text-gray-500">{s.slug}</p>
-      //     </div>
-
-      //     {/* Duration */}
-      // <div>
-      //   <p className="text-sm font-medium mb-2">Duration</p>
-      //   <div className="flex gap-2 flex-wrap">
-      //     {durations.map((d) => (
-      //       <Button
-      //         key={d}
-      //         size="sm"
-      //         variant={selectedDuration === d ? "default" : "outline"}
-      //         onClick={() =>
-      //           setSelectedDurations((prev) => ({
-      //             ...prev,
-      //             [s.id]: d,
-      //           }))
-      //         }
-      //       >
-      //         {d} min
-      //       </Button>
-      //     ))}
-      //   </div>
-      // </div>
-
-      //     {/* Price + Book */}
-      //     <div className="flex items-center justify-between">
-      //       <p className="text-lg font-bold">₹{s.price}</p>
-
-      // <Button
-      //   onClick={() =>
-      //     router.push(
-      //       `/booking?serviceId=${s.id}&duration=${selectedDuration}`
-      //     )
-      //   }
-      // >
-      //   Book
-      // </Button>
-      //     </div>
-      //   </div>
-      // </article>
-
       <div
-        className="bg-[#F9F9F9] p-4 w-[450px] h-fit flex flex-col items-start relative"
+        className="bg-[#F9F9F9] p-4 w-full flex flex-col items-start relative"
         key={s.id}
       >
-        <img
-          className="w-full  rounded-3xl object-cover"
-          src={s.mediaUrl || "/placeholder.jpg"}
-          alt={s.title}
-        />
+        <div className="flex flex-row w-full">
+          <img
+            className="w-[450px] h-[450px] rounded-3xl object-cover"
+            src={s.mediaUrl || "/placeholder.jpg"}
+            alt={s.title}
+          />
 
-        {s.type === "combo" ? 
-        <div className="absolute rounded-4xl top-2.5 left-2.5 p-2">
-          Combo
-        </div> : <></>}
-        
-
-        <div className="flex flex-col w-full justify-between mt-4 mb-4">
+<div className="flex flex-col w-full justify-between mt-4 mb-4">
           {/* <span className="text-2xl font-semibold">
               {s.title}
             </span> */}
@@ -176,6 +116,16 @@ export default function Services() {
             </a> */}
 
         </div>
+        </div>
+
+
+        {s.type === "combo" ? 
+        <div className="absolute rounded-4xl top-5.5 left-5.5 p-1 py-0.5 bg-white">
+          Combo
+        </div> : <></>}
+        
+
+        
           <div className="flex flex-row justify-between w-full">
             <div>
               <p className="text-sm font-light mb-1">Duration</p>
@@ -248,7 +198,7 @@ export default function Services() {
           )} */}
           {services.length > 0 && (
             <section className="mb-12">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-6">
                 {services.map(renderServiceCard)}
               </div>
             </section>

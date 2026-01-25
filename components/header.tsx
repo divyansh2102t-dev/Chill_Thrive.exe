@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import Link from "next/link";
-
 import { usePathname } from "next/navigation";
+import { Menu, X } from "lucide-react"; // Standard icons
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -16,18 +16,9 @@ type NavItem = {
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const pathname = usePathname(); // 2. Initialize it
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const pathname = usePathname();
 
-  // const navItems: NavItem[] = [
-  //   { label: "services", href: "/services" },
-  //   { label: "awareness", href: "/awareness" },
-  //   { label: "events", href: "/events" },
-  //   { label: "founder", href: "/about" },
-  //   { label: "contact us", href: "/contact" },
-  //   { label: "testimonials", href: "/testimonials" },
-  // ];
   const navItems: NavItem[] = [
     { label: "Services", href: "/services" },
     { label: "Awareness", href: "/awareness" },
@@ -38,46 +29,22 @@ export default function Header() {
   ];
 
   const navRight: NavItem[] = navItems.slice(0, 3);
-  const navLeft: NavItem[] = navItems.slice(3, 6)
-
-  // useEffect(() => {
-  //   const onScroll = () => {
-  //     const currentY = window.scrollY;
-
-  //     // style change
-  //     setScrolled(currentY > 40);
-
-  //     // direction detection
-  //     if (currentY > lastScrollY && currentY > 80) {
-  //       setHidden(true); // scrolling down
-  //     } else {
-  //       setHidden(false); // scrolling up
-  //     }
-
-  //     setLastScrollY(currentY);
-  //   };
-
-  //   window.addEventListener("scroll", onScroll, { passive: true });
-  //   return () => window.removeEventListener("scroll", onScroll);
-  // }, [lastScrollY]);
+  const navLeft: NavItem[] = navItems.slice(3, 6);
 
   const leftNavRef = useRef<HTMLDivElement>(null);
   const rightNavRef = useRef<HTMLDivElement>(null);
-  const leftZoneRef = useRef<HTMLDivElement>(null);
-  const rightZoneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // 3. This block now runs every time the URL changes
+    setIsMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
     const hero = document.querySelector("#hero");
     let heroActive = false;
     let activeSide: "left" | "right" | null = null;
 
-    // Reset styles immediately on page change
-    gsap.set([leftNavRef.current, rightNavRef.current], {
-      opacity: 1,
-    });
+    gsap.set([leftNavRef.current, rightNavRef.current], { opacity: 1 });
 
-    // Create your ScrollTrigger
     const st = ScrollTrigger.create({
       trigger: hero,
       start: "top top",
@@ -95,7 +62,7 @@ export default function Header() {
     });
 
     const onMouseMove = (e: MouseEvent) => {
-      if (!heroActive) return;
+      if (!heroActive || window.innerWidth < 768) return; 
       const vw = window.innerWidth;
       const x = e.clientX;
       const threshold = vw * 0.15;
@@ -134,86 +101,88 @@ export default function Header() {
       activeSide = null;
     }
 
-    // 4. CLEANUP: Crucial for page transitions
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
-      st.kill(); // Kill the specific trigger
-      ScrollTrigger.getAll().forEach(t => t.kill()); // Kill all others to be safe
+      st.kill();
     };
-  }, [pathname]); // 5. Pathname dependency triggers the reset
+  }, [pathname]);
 
   return (
-    <header
-      className={` sticky
-        top-0 left-0 w-full z-50
-      `}
-    >
-      <div
-        className={`
-        `}
-      >
-        <Link href="/" className="absolute top-10 left-10">
+    <header className="sticky top-0 left-0 w-full z-50">
+      <div className="relative">
+        
+        {/* LOGO */}
+        <Link href="/" className="absolute top-10 left-6 md:left-10 z-50">
           <img
             src="/image/chillthrive-logo.png"
             alt="Chill Thrive Logo"
-            className={`w-25`}
+            className="w-20 md:w-25"
           />
         </Link>
-        
-        <div className="md:hidden">
-          {navItems.map((el, i) => (
+
+        {/* MOBILE ACTIONS (Book + Hamburger) */}
+        <div className="md:hidden absolute top-10 right-6 z-50 flex items-center gap-6">
+          <Link href="/booking">
+            <span className="font-light text-lg underline text-gray-600">
+              book
+            </span>
+          </Link>
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="text-gray-600 focus:outline-none"
+          >
+            {isMenuOpen ? <X size={28} strokeWidth={1.5} /> : <Menu size={28} strokeWidth={1.5} />}
+          </button>
+        </div>
+
+        {/* MOBILE SIDEBAR OVERLAY */}
+        <div className={`
+          fixed inset-0 bg-white/95 backdrop-blur-sm z-40 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out md:hidden
+          ${isMenuOpen ? "translate-x-0" : "translate-x-full"}
+        `}>
+          <nav className="flex flex-col gap-6 text-center">
+            {navItems.map((el, i) => (
+              <Link
+                key={i}
+                href={el.href}
+                className="text-2xl font-light text-gray-600 hover:text-[#289BD0]"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {el.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+
+        {/* DESKTOP UI - LEFT NAV */}
+        <div ref={leftNavRef} className="hidden md:flex flex-col absolute left-0 z-40 pointer-events-auto top-[calc(50vh-42px)]">
+          {navRight.map((el) => (
             <Link
-              key={i}
+              key={el.href}
               href={el.href}
-              className={`
-                ml-10 text-xl font-light transition-colors
-                ${scrolled ? "text-gray-800" : "text-gray-600"}
-                hover:text-[#289BD0]
-              `}
+              className="ml-10 text-xl font-light transition-colors mb-2 text-gray-600 hover:text-[#289BD0]"
             >
               {el.label}
             </Link>
           ))}
         </div>
 
-        <div  ref={leftNavRef} className="flex flex-col absolute left-0 z-40 pointer-events-auto top-[calc(50vh-42px)]">
-          {
-            navRight.map((el, i) => (
-              <Link
+        {/* DESKTOP UI - RIGHT NAV */}
+        <div ref={rightNavRef} className="hidden md:flex flex-col absolute z-40 right-0 top-[calc(50vh-42px)]">
+          {navLeft.map((el) => (
+            <Link
               key={el.href}
               href={el.href}
-              className={`
-                ml-10 text-xl font-light transition-colors mb-2
-                ${scrolled ? "text-gray-800" : "text-gray-600"}
-                hover:text-[#289BD0]
-              `}
+              className="mr-10 text-xl font-light transition-colors text-end mb-2 text-gray-600 hover:text-[#289BD0]"
             >
               {el.label}
             </Link>
-            ))
-          }
+          ))}
         </div>
 
-        <div ref={rightNavRef} className="flex flex-col absolute z-40  right-0 top-[calc(50vh-42px)]">
-          {
-            navLeft.map((el, i) => (
-              <Link
-              key={el.href}
-              href={el.href}
-              className={`
-                mr-10 text-xl font-light transition-colors text-end mb-2
-                ${scrolled ? "text-gray-800" : "text-gray-600"}
-                hover:text-[#289BD0]
-              `}
-            >
-              {el.label}
-            </Link>
-            ))
-          }
-        </div>
-
-        <Link id="book" className="absolute top-10 right-10 rounded-2xl" href="/booking">
-          <span className="font-light text-xl underline hover:no-underline">
+        {/* DESKTOP UI - BOOKING LINK */}
+        <Link id="book" className="hidden md:block absolute top-10 right-10 rounded-2xl" href="/booking">
+          <span className="font-light text-xl underline hover:no-underline text-gray-600">
             book a service
           </span>
         </Link>

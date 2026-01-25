@@ -87,24 +87,41 @@ export default function AdminDashboard() {
       </header>
 
       {/* Primary Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: 'Confirmed Revenue', val: formatCurrency(metrics.totalRevenue), icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Total active', val: metrics.totalBookings, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Today\'s Bookings', val: metrics.todayBookings, icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-          { label: 'Pending Approval', val: metrics.pendingActions, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-3">
-            <div className={`w-12 h-12 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center`}>
-              <stat.icon size={24} />
-            </div>
-            <div>
-              <p className="text-slate-400 text-xs font-black uppercase tracking-widest">{stat.label}</p>
-              <h4 className="text-2xl font-black text-slate-800">{loading ? '...' : stat.val}</h4>
-            </div>
-          </div>
-        ))}
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  {[
+    { 
+      label: 'Confirmed Revenue', 
+      val: formatCurrency(metrics.totalRevenue), 
+      icon: TrendingUp, 
+      color: 'text-emerald-600', 
+      bg: 'bg-emerald-50',
+      href: '/admin/analytics' // Added navigation target
+    },
+    { label: 'Total active', val: metrics.totalBookings, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Today\'s Bookings', val: metrics.todayBookings, icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { label: 'Pending Approval', val: metrics.pendingActions, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+  ].map((stat, i) => {
+    const CardContent = (
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-3 h-full hover:border-indigo-200 transition-colors">
+        <div className={`w-12 h-12 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center`}>
+          <stat.icon size={24} />
+        </div>
+        <div>
+          <p className="text-slate-400 text-xs font-black uppercase tracking-widest">{stat.label}</p>
+          <h4 className="text-2xl font-black text-slate-800">{loading ? '...' : stat.val}</h4>
+        </div>
       </div>
+    );
+
+    return stat.href ? (
+      <Link key={i} href={stat.href}>
+        {CardContent}
+      </Link>
+    ) : (
+      <div key={i}>{CardContent}</div>
+    );
+  })}
+</div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         

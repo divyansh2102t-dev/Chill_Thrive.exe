@@ -15,7 +15,7 @@ const navItems = [
   { label: "Promos", href: "/admin/promos", icon: TicketPercent },
   { label: "Content", href: "/admin/content", icon: FileText },
   { label: "Schedule", href: "/admin/schedule", icon: Clock },
-  { label: "Queries", href: "/admin/enquiry", icon: Clock },
+  { label: "Queries", href: "/admin/query", icon: Clock },
 ];
 
 export default function AdminSidebar() {

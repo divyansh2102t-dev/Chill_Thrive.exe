@@ -22,10 +22,10 @@ export default function Header() {
   const navItems: NavItem[] = [
     { label: "Services", href: "/services" },
     { label: "Awareness", href: "/awareness" },
+    { label: "Testimonials", href: "/testimonials" },
     { label: "Events", href: "/events" },
     { label: "Founder", href: "/about" },
     { label: "Contact Us", href: "/contact" },
-    { label: "Testimonials", href: "/testimonials" },
   ];
 
   const navRight: NavItem[] = navItems.slice(0, 3);

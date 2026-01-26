@@ -14,6 +14,7 @@ export default function Footer() {
   const footerItems: FooterItems[] = [
     { icon: "https://www.iconpacks.net/icons/2/free-instagram-logo-icon-3497-thumb.png", social: "https://www.instagram.com/chill.thrive/" },
     { icon: "https://img.icons8.com/ios-filled/50/1A1A1A/linkedin.png", social: "https://www.linkedin.com/in/chill-thrive-8a911b320/" },
+    { icon: "https://img.icons8.com/ios-filled/50/youtube-play.png", social: "https://www.youtube.com/@ChillThrive" },
   ];
 
   return (

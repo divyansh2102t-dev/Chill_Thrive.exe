@@ -97,9 +97,9 @@ export default function AdminDashboard() {
       bg: 'bg-emerald-50',
       href: '/admin/analytics' // Added navigation target
     },
-    { label: 'Total active', val: metrics.totalBookings, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Today\'s Bookings', val: metrics.todayBookings, icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { label: 'Pending Approval', val: metrics.pendingActions, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+    // { label: 'Total active', val: metrics.totalBookings, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Today\'s Confirmed Bookings', val: metrics.todayBookings, icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50', href: '/admin/booking'},
+    { label: 'Pending Approval', val: metrics.pendingActions, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', href: '/admin/booking' },
   ].map((stat, i) => {
     const CardContent = (
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-3 h-full hover:border-indigo-200 transition-colors">
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
         <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-slate-50 flex justify-between items-center">
             <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest">Recent Reservations</h3>
-            <Link href="/admin/bookings" className="text-indigo-600 text-xs font-bold hover:underline">View All</Link>
+            <Link href="/admin/booking" className="text-indigo-600 text-xs font-bold hover:underline">View All</Link>
           </div>
           <div className="divide-y divide-slate-50">
             {recentBookings.map((b) => (

@@ -123,6 +123,8 @@ type TestimonialPreview = {
   thumbnail_url?: string | null;
   rating?: number | null;
 };
+import { User } from "lucide-react"; // Add this import at the top of your file
+
 function TestimonialsPreview() {
   const router = useRouter();
   const [testimonials, setTestimonials] = useState<TestimonialPreview[]>([]);
@@ -147,7 +149,7 @@ function TestimonialsPreview() {
   if (testimonials.length === 0) return null;
 
   return (
-    <section className="max-w-[1080px] mx-auto py-24 px-4 sm:px-6 space-y-12">
+    <section className="max-w-[1080px] mx-auto py-24 px-4 sm:px-6 space-y-16">
       {/* Header aligned with "Our Services" style */}
       <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between border-b border-gray-100 pb-8 gap-4">
         <div className="space-y-2 text-center sm:text-left">
@@ -166,43 +168,55 @@ function TestimonialsPreview() {
         </Button>
       </div>
 
-      {/* Grid using the Service Card layout logic */}
+      {/* Grid matching the Service Card layout logic */}
       <div className="flex flex-wrap justify-center gap-6 sm:gap-10 md:gap-12">
         {testimonials.map((t) => (
           <div 
             key={t.id} 
-            className="bg-[#F9F9F9] p-4 w-full sm:w-[calc(50%-12px)] md:w-[312px] h-fit flex flex-col items-start"
+            className="bg-[#F9F9F9] p-6 w-full sm:w-[calc(50%-12px)] md:w-[312px] h-auto flex flex-col items-start rounded-[32px] transition-all hover:shadow-sm"
           >
-            {/* Square Thumbnail - Matching Service Card Media */}
-            <div className="w-full h-[85vw] sm:h-[calc(50%-12px)] md:h-[312px] overflow-hidden rounded-3xl bg-gray-200">
+            {/* Media Area: Matches Service Card Media proportions */}
+            <div className="w-full aspect-square overflow-hidden rounded-3xl bg-gray-200 mb-6 flex items-center justify-center">
               {t.type === "video" && t.video_url ? (
                 <iframe
-                  src={t.video_url.replace("watch?v=", "embed/")}
+                  src={t.video_url.includes("watch?v=") ? t.video_url.replace("watch?v=", "embed/") : t.video_url}
                   className="w-full h-full object-cover"
                   allowFullScreen
                 />
-              ) : (
+              ) : t.thumbnail_url ? (
                 <img 
-                  src={t.thumbnail_url || "/image/blankimage.png"} 
+                  src={t.thumbnail_url} 
                   alt={t.name}
                   className="w-full h-full object-cover"
                 />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-gray-400 gap-2">
+                  <User size={48} strokeWidth={1.5} />
+                  <span className="text-[10px] uppercase tracking-widest font-bold">No Preview</span>
+                </div>
               )}
             </div>
 
-            <div className="flex flex-row w-full justify-between items-start mt-4 mb-2">
+            {/* Identity Row */}
+            <div className="flex flex-row w-full justify-between items-start mb-4">
               <div className="flex flex-col">
-                <span className="text-xl font-semibold leading-tight">{t.name}</span>
-                <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mt-1">Verified Member</span>
+                <span className="text-xl font-semibold leading-tight text-black">{t.name}</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#00FF48]" />
+                  <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Verified Member</span>
+                </div>
               </div>
               
-              <div className="text-[#289BD0] text-sm">
-                {"★".repeat(t.rating ?? 5)}
+              <div className="text-[#289BD0] text-sm flex">
+                {[...Array(5)].map((_, i) => (
+                  <span key={i} className={i < (t.rating ?? 5) ? "opacity-100" : "opacity-20"}>★</span>
+                ))}
               </div>
             </div>
 
-            <p className="text-sm text-gray-600 line-clamp-4 leading-relaxed italic">
-              {t.feedback ? `"${t.feedback}"` : "Experience shared via video."}
+            {/* Feedback Text */}
+            <p className="text-sm text-gray-600 line-clamp-5 leading-relaxed italic">
+              {t.feedback ? `"${t.feedback}"` : "This member shared their recovery journey via video testimonial."}
             </p>
           </div>
         ))}

@@ -86,6 +86,7 @@ export default function AdminBookings() {
   /* ---------- CALCULATIONS ---------- */
   const stats = {
     revenue: bookings.filter(b => b.status === 'confirmed').reduce((acc, curr) => acc + curr.final_amount, 0),
+    confirmed: bookings.filter(b => b.status === 'confirmed').length,
     pending: bookings.filter(b => b.status === 'pending').length,
     cancelled: bookings.filter(b => b.status === 'cancelled').length
   };
@@ -143,7 +144,8 @@ export default function AdminBookings() {
       {/* STATS RIBBON */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { label: 'Total Revenue', value: `₹${stats.revenue.toLocaleString()}`, icon: <TrendingUp className="text-emerald-600" />, bg: 'bg-emerald-50' },
+          // { label: 'Total Revenue', value: `₹${stats.revenue.toLocaleString()}`, icon: <TrendingUp className="text-emerald-600" />, bg: 'bg-emerald-50' },
+          { label: 'Confirmed Requests', value: stats.confirmed, icon: <Clock className="text-amber-600" />, bg: 'bg-emerald-50' },
           { label: 'Pending Requests', value: stats.pending, icon: <Clock className="text-amber-600" />, bg: 'bg-amber-50' },
           { label: 'Cancelled count', value: stats.cancelled, icon: <XCircle className="text-red-600" />, bg: 'bg-red-50' }
         ].map((stat, i) => (

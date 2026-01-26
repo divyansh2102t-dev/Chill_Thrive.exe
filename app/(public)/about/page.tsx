@@ -25,10 +25,10 @@ export default async function FounderPage() {
   return (
     <div className="bg-[#FFFFFF] min-h-screen font-sans text-black">
       {/* ---------- HERO SECTION ---------- */}
-      <section className="pt-24 pb-16 px-6">
-        <div className="flex justify-center mb-25">
+      <section className="pt-24 pb-25 px-6">
+        <div className="flex justify-center mb-10">
             <h1 className="text-6xl font-bold tracking-tight">
-              <span className="text-[#289BD0]">The</span> Founder
+              <span className="text-[#289BD0]">Our</span> Founder
             </h1>
         </div>
 
@@ -46,8 +46,6 @@ export default async function FounderPage() {
               <span className="text-[#289BD0]">The</span> Founder
             </h1> */}
             <p className="text-5xl font-light ">{founder.founder_name}</p>
-
-            
           </div>
         </div>
       </section>

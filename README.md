@@ -742,4 +742,4 @@ Private project - All rights reserved
 
 ## 👥 Support
 
-For questions or issues, contact: hello@chillthrive.in
+For questions or issues, contact: chillthrivegwoc@gmail.com

@@ -186,7 +186,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm max-w-md">
+      <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm max-w-lg">
         <h3 className="text-sm font-black text-[#0A2540] uppercase mb-8">Status Mix</h3>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">

@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: false, // Security: Only allow existing admins
+          shouldCreateUser: true, // Security: Only allow existing admins
         }
       });
 

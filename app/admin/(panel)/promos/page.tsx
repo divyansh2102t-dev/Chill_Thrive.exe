@@ -258,7 +258,7 @@ export default function PromoCodesPage() {
                 
                 <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
                    <div className="flex items-center gap-1"><IndianRupee size={14} className="text-indigo-400"/> ₹{c.discount_amount} OFF</div>
-                   <div className="flex items-center gap-1"><Users size={14} className="text-indigo-400"/> {c.used_count} Redemptions</div>
+                   {/* <div className="flex items-center gap-1"><Users size={14} className="text-indigo-400"/> {c.used_count} Redemptions</div> */}
                 </div>
 
                 {c.max_uses && (

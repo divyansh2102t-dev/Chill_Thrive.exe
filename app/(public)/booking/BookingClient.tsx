@@ -255,7 +255,6 @@ function DateTimeStep({ date, time, service, onBack, onNext }: any) {
 }
 
 /* STEP 3: DETAILS */
-
 function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, onPricingChange }: any) {
   const [submitting, setSubmitting] = useState(false);
   const [coupon, setCoupon] = useState("");
@@ -264,12 +263,10 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  
+
   const searchParams = useSearchParams();
   const { service, duration, price } = selection;
   const finalAmount = price - discount;
-
-  // ... (applyCouponLogic remains the same)
   const applyCouponLogic = useCallback(async (codeToApply: string) => {
     if (!codeToApply || codeToApply.trim() === "") return 0;
     try {
@@ -279,228 +276,59 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
         body: JSON.stringify({ code: codeToApply.toUpperCase(), serviceId: service.id, duration }),
       });
       const data = await res.json();
+      
       if (data.valid) {
         setDiscount(data.discountAmount);
         setCoupon(codeToApply.toUpperCase());
-        onPricingChange({ baseAmount: price, discountAmount: data.discountAmount, finalAmount: price - data.discountAmount, couponCode: codeToApply.toUpperCase() });
+        onPricingChange({ 
+          baseAmount: price, 
+          discountAmount: data.discountAmount, 
+          finalAmount: price - data.discountAmount, 
+          couponCode: codeToApply.toUpperCase() 
+        });
         return data.discountAmount;
       }
       return 0;
-    } catch (e) { return 0; }
+    } catch (e) {
+      console.error("Coupon failed", e);
+      return 0;
+    }
   }, [service.id, duration, price, onPricingChange]);
 
-  function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, onPricingChange }: any) {
-    const [submitting, setSubmitting] = useState(false);
-    const [coupon, setCoupon] = useState("");
-    const [discount, setDiscount] = useState(0);
-    const [isVerifying, setIsVerifying] = useState(false);
-    const [isEmailVerified, setIsEmailVerified] = useState(false);
-    const [otp, setOtp] = useState("");
-    const [otpSent, setOtpSent] = useState(false);
-    
-    const searchParams = useSearchParams();
-    const { service, duration, price } = selection;
-    const finalAmount = price - discount;
-  
-    // ... (applyCouponLogic remains the same)
-    const applyCouponLogic = useCallback(async (codeToApply: string) => {
-      if (!codeToApply || codeToApply.trim() === "") return 0;
+  useEffect(() => {
+    const runAutoApply = async () => {
+      const urlCode = searchParams.get("promo");
+      if (urlCode) {
+        await applyCouponLogic(urlCode);
+        return;
+      }
+
       try {
-        const res = await fetch("/api/coupon", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: codeToApply.toUpperCase(), serviceId: service.id, duration }),
-        });
-        const data = await res.json();
-        if (data.valid) {
-          setDiscount(data.discountAmount);
-          setCoupon(codeToApply.toUpperCase());
-          onPricingChange({ baseAmount: price, discountAmount: data.discountAmount, finalAmount: price - data.discountAmount, couponCode: codeToApply.toUpperCase() });
-          return data.discountAmount;
+        const now = new Date().toISOString();
+        const { data: autoCoupons } = await supabase
+          .from('coupons')
+          .select('*')
+          .eq('is_auto_apply', true)
+          .eq('is_active', true)
+          .lte('valid_from', now)
+          .gte('valid_until', now);
+        
+        if (autoCoupons && autoCoupons.length > 0) {
+          const validAutoCoupon = autoCoupons.find(c => 
+            !c.applicable_services || 
+            c.applicable_services.length === 0 || 
+            c.applicable_services.includes(service.id)
+          );
+          if (validAutoCoupon) {
+            await applyCouponLogic(validAutoCoupon.code);
+          }
         }
-        return 0;
-      } catch (e) { return 0; }
-    }, [service.id, duration, price, onPricingChange]);
-  
-    useEffect(() => { /* ... runAutoApply remains the same ... */ }, [service.id, applyCouponLogic]);
-  
-    const handleSendOTP = async () => {
-      if (!form.email.includes("@")) return alert("Enter a valid email");
-      setIsVerifying(true);
-      const res = await fetch("/api/otp/send", {
-        method: "POST",
-        body: JSON.stringify({ email: form.email }),
-      });
-      if (res.ok) setOtpSent(true);
-      else alert("Failed to send OTP");
-      setIsVerifying(false);
+      } catch (err) { console.error("Auto-apply check failed", err); }
     };
+    runAutoApply();
+  }, [service.id, applyCouponLogic]);
+
   
-    const handleVerifyOTP = async () => {
-      setIsVerifying(true);
-      const res = await fetch("/api/otp/verify", {
-        method: "POST",
-        body: JSON.stringify({ email: form.email, otp }),
-      });
-      if (res.ok) setIsEmailVerified(true);
-      else alert("Invalid OTP");
-      setIsVerifying(false);
-    };
-  
-    async function confirmBooking() {
-      if (form.phone.length !== 10) return alert("Please enter 10 digits mobile number.");
-      if (!isEmailVerified) return alert("Please verify your email first.");
-  
-      setSubmitting(true);
-      let currentDiscount = discount;
-      if (coupon && discount === 0) {
-          const val = await applyCouponLogic(coupon);
-          currentDiscount = val;
-      }
-  
-      const calculatedFinal = price - currentDiscount;
-      const bookingPayload = { service, date: formatLocalDate(date), slotId: time.slotId, time, duration, couponCode: coupon, discountAmount: currentDiscount, finalAmount: calculatedFinal, form };
-  
-      if (form.payment === "QR") {
-        const loaded = await loadRazorpay();
-        if (!loaded) { alert("Razorpay failed to load"); setSubmitting(false); return; }
-        const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
-          amount: Math.round(calculatedFinal * 100),
-          currency: "INR",
-          name: "Recovery Center",
-          description: `Booking: ${service.title}`,
-          handler: async (response: any) => {
-            await finalize(bookingPayload, { razorpay_payment_id: response.razorpay_payment_id, razorpay_order_id: response.razorpay_order_id, razorpay_signature: response.razorpay_signature });
-          },
-          prefill: { name: form.name, email: form.email, contact: form.phone },
-          theme: { color: "#289BD0" },
-          modal: { ondismiss: () => setSubmitting(false) }
-        };
-        const rzp = new (window as any).Razorpay(options);
-        rzp.open();
-      } else {
-        await finalize(bookingPayload);
-      }
-    }
-  
-    async function finalize(payload: any, paymentDetails?: any) {
-      try {
-        const res = await fetch("/api/booking", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...payload, paymentDetails }),
-        });
-        if (res.ok) onSuccess({ finalAmount: payload.finalAmount });
-        else { const err = await res.json(); alert(err.error || "Booking failed"); }
-      } catch (e) { alert("Network error"); } finally { setSubmitting(false); }
-    }
-  
-    return (
-      <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
-        <div className="space-y-10">
-          <h2 className="text-4xl font-bold tracking-tight">Final <span className="text-[#289BD0]">Details</span></h2>
-          <div className="space-y-8">
-            {['name', 'phone', 'email'].map((field) => (
-              <div key={field} className="space-y-2">
-                <Label className="text-[10px] font-black tracking-widest uppercase text-gray-400">{field}</Label>
-                <div className="relative">
-                  <Input
-                    disabled={field === 'email' && isEmailVerified}
-                    placeholder={`Your ${field}`}
-                    value={(form as any)[field]}
-                    onChange={(e) => {
-                      if (field === 'phone') {
-                        const val = e.target.value.replace(/\D/g, "");
-                        if (val.length <= 10) setForm({ ...form, phone: val });
-                      } else setForm({ ...form, [field]: e.target.value });
-                    }}
-                    className="border-0 border-b-2 border-[#F9F9F9] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#289BD0] transition-colors bg-transparent text-xl h-12 w-full pr-20"
-                  />
-                  {field === 'email' && !isEmailVerified && (
-                    <button 
-                      onClick={handleSendOTP} 
-                      disabled={isVerifying || !form.email}
-                      className="absolute right-0 bottom-2 text-xs font-bold text-[#289BD0] uppercase tracking-tighter hover:text-black disabled:opacity-50"
-                    >
-                      {otpSent ? "Resend" : "Verify"}
-                    </button>
-                  )}
-                  {field === 'email' && isEmailVerified && (
-                    <CheckCircle2 size={20} className="absolute right-0 bottom-2 text-[#00FF48]" />
-                  )}
-                </div>
-              </div>
-            ))}
-  
-            {otpSent && !isEmailVerified && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                <Label className="text-[10px] font-black tracking-widest uppercase text-[#289BD0]">Enter 6-Digit OTP</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="000000" 
-                    value={otp} 
-                    onChange={e => setOtp(e.target.value.slice(0,6))}
-                    className="border-b-2 border-[#289BD0] bg-transparent text-2xl tracking-[0.5em] h-12"
-                  />
-                  <Button onClick={handleVerifyOTP} disabled={isVerifying} className="bg-black text-white px-8 rounded-xl">
-                    {isVerifying ? <Loader2 className="animate-spin" /> : "Confirm"}
-                  </Button>
-                </div>
-              </div>
-            )}
-  
-            <div className="space-y-4">
-                <Label className="text-[10px] font-black tracking-widest uppercase text-gray-400">Payment Method</Label>
-                <div className="flex gap-4">
-                  {['QR', 'CASH'].map(m => (
-                    <button 
-                     key={m}
-                     type="button"
-                     onClick={() => setForm({...form, payment: m as any})}
-                     className={`flex-1 py-4 rounded-2xl font-bold transition-all border-2 ${form.payment === m ? 'border-black bg-black text-white' : 'border-[#F9F9F9] text-gray-400'}`}
-                    >
-                      {m === 'QR' ? 'Pay Online' : 'Pay at Venue'}
-                    </button>
-                  ))}
-                </div>
-            </div>
-          </div>
-        </div>
-  
-        <div className="bg-[#F9F9F9] p-10 rounded-[40px] h-fit sticky top-24 space-y-8">
-          <h3 className="text-xl font-bold">Booking Summary</h3>
-          <div className="space-y-3">
-            <Row label="Service" value={service.title} />
-            <Row label="Date" value={formatLocalDate(date)} />
-            <Row label="Time" value={time.label} />
-            <Row label="Amount" value={`₹${price}`} />
-            {discount > 0 && <Row label="Coupon" value={`-₹${discount}`} valueClass="text-[#00FF48] font-bold" />}
-          </div>
-          <div className="flex gap-2">
-            <Input placeholder="COUPON" value={coupon} onChange={e => setCoupon(e.target.value.toUpperCase())} className="rounded-xl border-none bg-white h-12" />
-            <Button onClick={() => applyCouponLogic(coupon)} variant="outline" className="rounded-xl h-12 px-6">Apply</Button>
-          </div>
-          <div className="pt-6 border-t border-black/5">
-            <div className="flex justify-between items-end mb-8">
-              <span className="text-sm font-bold uppercase tracking-widest text-gray-400">Total Payable</span>
-              <span className="text-4xl font-light">₹{finalAmount}</span>
-            </div>
-            <Button 
-              disabled={submitting || !form.name || !form.phone || !isEmailVerified}
-              onClick={confirmBooking}
-              className="w-full bg-[#289BD0] hover:bg-black text-white h-16 rounded-2xl text-xl font-bold shadow-lg shadow-blue-200 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
-            >
-              {submitting ? <Loader2 className="animate-spin" /> : 
-               !isEmailVerified ? "Verify Email to Book" : 
-               (form.payment === "QR" ? "Pay & Book" : "Confirm Booking")}
-            </Button>
-            <Button variant="ghost" onClick={onBack} className="w-full mt-4 text-gray-400">Modify Selection</Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
   const handleSendOTP = async () => {
     if (!form.email.includes("@")) return alert("Enter a valid email");
     setIsVerifying(true);
@@ -531,8 +359,8 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
     setSubmitting(true);
     let currentDiscount = discount;
     if (coupon && discount === 0) {
-        const val = await applyCouponLogic(coupon);
-        currentDiscount = val;
+      const val = await applyCouponLogic(coupon);
+      currentDiscount = val;
     }
 
     const calculatedFinal = price - currentDiscount;
@@ -542,7 +370,7 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
       const loaded = await loadRazorpay();
       if (!loaded) { alert("Razorpay failed to load"); setSubmitting(false); return; }
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: Math.round(calculatedFinal * 100),
         currency: "INR",
         name: "Recovery Center",
@@ -595,8 +423,8 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
                   className="border-0 border-b-2 border-[#F9F9F9] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#289BD0] transition-colors bg-transparent text-xl h-12 w-full pr-20"
                 />
                 {field === 'email' && !isEmailVerified && (
-                  <button 
-                    onClick={handleSendOTP} 
+                  <button
+                    onClick={handleSendOTP}
                     disabled={isVerifying || !form.email}
                     className="absolute right-0 bottom-2 text-xs font-bold text-[#289BD0] uppercase tracking-tighter hover:text-black disabled:opacity-50"
                   >
@@ -614,10 +442,10 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
             <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
               <Label className="text-[10px] font-black tracking-widest uppercase text-[#289BD0]">Enter 6-Digit OTP</Label>
               <div className="flex gap-2">
-                <Input 
-                  placeholder="000000" 
-                  value={otp} 
-                  onChange={e => setOtp(e.target.value.slice(0,6))}
+                <Input
+                  placeholder="000000"
+                  value={otp}
+                  onChange={e => setOtp(e.target.value.slice(0, 6))}
                   className="border-b-2 border-[#289BD0] bg-transparent text-2xl tracking-[0.5em] h-12"
                 />
                 <Button onClick={handleVerifyOTP} disabled={isVerifying} className="bg-black text-white px-8 rounded-xl">
@@ -628,19 +456,19 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
           )}
 
           <div className="space-y-4">
-              <Label className="text-[10px] font-black tracking-widest uppercase text-gray-400">Payment Method</Label>
-              <div className="flex gap-4">
-                {['QR', 'CASH'].map(m => (
-                  <button 
-                   key={m}
-                   type="button"
-                   onClick={() => setForm({...form, payment: m as any})}
-                   className={`flex-1 py-4 rounded-2xl font-bold transition-all border-2 ${form.payment === m ? 'border-black bg-black text-white' : 'border-[#F9F9F9] text-gray-400'}`}
-                  >
-                    {m === 'QR' ? 'Pay Online' : 'Pay at Venue'}
-                  </button>
-                ))}
-              </div>
+            <Label className="text-[10px] font-black tracking-widest uppercase text-gray-400">Payment Method</Label>
+            <div className="flex gap-4">
+              {['QR', 'CASH'].map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setForm({ ...form, payment: m as any })}
+                  className={`flex-1 py-4 rounded-2xl font-bold transition-all border-2 ${form.payment === m ? 'border-black bg-black text-white' : 'border-[#F9F9F9] text-gray-400'}`}
+                >
+                  {m === 'QR' ? 'Pay Online' : 'Pay at Venue'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -663,14 +491,14 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
             <span className="text-sm font-bold uppercase tracking-widest text-gray-400">Total Payable</span>
             <span className="text-4xl font-light">₹{finalAmount}</span>
           </div>
-          <Button 
+          <Button
             disabled={submitting || !form.name || !form.phone || !isEmailVerified}
             onClick={confirmBooking}
             className="w-full bg-[#289BD0] hover:bg-black text-white h-16 rounded-2xl text-xl font-bold shadow-lg shadow-blue-200 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
           >
-            {submitting ? <Loader2 className="animate-spin" /> : 
-             !isEmailVerified ? "Verify Email to Book" : 
-             (form.payment === "QR" ? "Pay & Book" : "Confirm Booking")}
+            {submitting ? <Loader2 className="animate-spin" /> :
+              !isEmailVerified ? "Verify Email to Book" :
+                (form.payment === "QR" ? "Pay & Book" : "Confirm Booking")}
           </Button>
           <Button variant="ghost" onClick={onBack} className="w-full mt-4 text-gray-400">Modify Selection</Button>
         </div>

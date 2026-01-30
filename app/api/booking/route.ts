@@ -177,7 +177,7 @@ export async function POST(req: Request) {
 
                 <p style="color: #9CA3AF; font-size: 13px; line-height: 1.6; text-align: center; margin-top: 40px;">
                   Booked on: ${bookedAtIST}<br>
-                  If you need to reschedule, reply to this email or contact us at ${process.env.GMAIL_USER}.
+                  If you need to reschedule, reply to this email or contact us at ${process.env.ADMIN_EMAIL}.
                 </p>
               </div>
 

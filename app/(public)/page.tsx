@@ -546,7 +546,7 @@ export default function Home() {
 
         <section ref={containerWhyRef} className="mx-auto relative h-screen overflow-hidden">
           <h2 ref={el1WhyRef} className="text-5xl z-0 sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-light mb-8 text-center absolute top-[calc(50vh-60px)] w-full px-4">
-            Why Chill Thrive
+            Why Chill Thrive?
           </h2>
 
           <div ref={el2WhyRef} className="absolute z-50 top-[calc(50vh-100px)] left-[calc(100vw)] flex flex-row flex-nowrap gap-10 sm:gap-20 md:gap-40 lg:gap-70">

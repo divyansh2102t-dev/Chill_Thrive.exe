@@ -123,7 +123,7 @@ export default function Header() {
         {/* MOBILE ACTIONS (Book + Hamburger) */}
         <div className="md:hidden absolute top-10 right-6 z-50 flex items-center gap-6">
           <Link href="/booking">
-            <span className="font-light text-lg underline text-gray-600">
+            <span className="font-light text-2xl text-[#289BD0]">
               Book
             </span>
           </Link>

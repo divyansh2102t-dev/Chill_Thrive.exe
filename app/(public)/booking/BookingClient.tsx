@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Service } from "@/lib/types/service";
 import { supabase } from "@/lib/supabase/client";
@@ -188,7 +188,7 @@ function DateTimeStep({ date, time, service, onBack, onNext }: any) {
 
   return (
     <div className="space-y-12">
-      <h2 className="text-5xl font-bold tracking-tight text-center">Report Between</h2>
+      <h2 className="text-5xl font-bold tracking-tight text-center">Select Reporting Time</h2>
       <div className="flex flex-col lg:flex-row gap-12 items-start justify-center">
         <div className="bg-[#F9F9F9] p-8 rounded-[40px] shadow-sm">
           <Calendar
@@ -253,7 +253,6 @@ function DateTimeStep({ date, time, service, onBack, onNext }: any) {
     </div>
   );
 }
-
 /* STEP 3: DETAILS */
 function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, onPricingChange }: any) {
   const [submitting, setSubmitting] = useState(false);
@@ -264,9 +263,18 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
 
+  // Refs for focusing
+  const phoneRef = import("react").then(() => null); // Just for type safety in logic below
+  const inputRefs = {
+    phone: useRef<HTMLInputElement>(null),
+    email: useRef<HTMLInputElement>(null),
+    otp: useRef<HTMLInputElement>(null)
+  };
+
   const searchParams = useSearchParams();
   const { service, duration, price } = selection;
   const finalAmount = price - discount;
+
   const applyCouponLogic = useCallback(async (codeToApply: string) => {
     if (!codeToApply || codeToApply.trim() === "") return 0;
     try {
@@ -328,7 +336,6 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
     runAutoApply();
   }, [service.id, applyCouponLogic]);
 
-  
   const handleSendOTP = async () => {
     if (!form.email.includes("@")) return alert("Enter a valid email");
     setIsVerifying(true);
@@ -336,7 +343,10 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
       method: "POST",
       body: JSON.stringify({ email: form.email }),
     });
-    if (res.ok) setOtpSent(true);
+    if (res.ok) {
+      setOtpSent(true);
+      setTimeout(() => inputRefs.otp.current?.focus(), 100);
+    }
     else alert("Failed to send OTP");
     setIsVerifying(false);
   };
@@ -411,9 +421,18 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
               <Label className="text-[10px] font-black tracking-widest uppercase text-gray-400">{field}</Label>
               <div className="relative">
                 <Input
+                  ref={field === 'phone' ? inputRefs.phone : field === 'email' ? inputRefs.email : null}
                   disabled={field === 'email' && isEmailVerified}
                   placeholder={`Your ${field}`}
                   value={(form as any)[field]}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (field === 'name') inputRefs.phone.current?.focus();
+                      if (field === 'phone') inputRefs.email.current?.focus();
+                      if (field === 'email' && !isEmailVerified) handleSendOTP();
+                    }
+                  }}
                   onChange={(e) => {
                     if (field === 'phone') {
                       const val = e.target.value.replace(/\D/g, "");
@@ -443,8 +462,15 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
               <Label className="text-[10px] font-black tracking-widest uppercase text-[#289BD0]">Enter 6-Digit OTP</Label>
               <div className="flex gap-2">
                 <Input
+                  ref={inputRefs.otp}
                   placeholder="000000"
                   value={otp}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleVerifyOTP();
+                    }
+                  }}
                   onChange={e => setOtp(e.target.value.slice(0, 6))}
                   className="border-b-2 border-[#289BD0] bg-transparent text-2xl tracking-[0.5em] h-12"
                 />

@@ -7,22 +7,27 @@ export default function CallToAction() {
   const router = useRouter();
 
   return (
-    <section className="h-screen flex items-center justify-center py-20">
-      <div className="border rounded-xl bg-white px-30 py-40 text-center space-y-6 h-fit">
-        <h2 className="text-3xl font-light">
-          Start Your Recovery Journey Today
+    <section className="min-h-[80vh] md:h-screen flex items-center justify-center px-6 py-20">
+      <div className="w-full max-w-[1080px] rounded-[40px] md:rounded-[60px] bg-[#F9F9F9] px-8 py-20 md:px-32 md:py-40 text-center space-y-8 h-fit transition-all duration-500 hover:bg-[#F0F9FF]">
+        
+        <h2 className="text-4xl md:text-7xl font-bold tracking-tighter leading-none text-black">
+          Start Your <span className="text-[#289BD0]">Recovery</span> <br className="hidden md:block" /> Journey Today
         </h2>
 
-        <p className="opacity-50 font-light max-w-md mx-auto">
-          Book your session and experience structured, science-backed recovery.
+        <p className="text-gray-400 font-light text-lg md:text-xl max-w-md mx-auto leading-relaxed">
+          Book your session and experience structured, <br className="hidden md:block" /> science-backed recovery.
         </p>
 
-        <Button
-          size="lg"
-          onClick={() => router.push("/services")}
-        >
-          Book a Session
-        </Button>
+        <div className="pt-4">
+          <Button
+            size="lg"
+            onClick={() => router.push("/services")}
+            className="bg-black hover:bg-[#289BD0] text-white px-10 py-8 rounded-2xl text-xl font-bold transition-all duration-300 shadow-xl shadow-black/5"
+          >
+            Book a Session
+          </Button>
+        </div>
+        
       </div>
     </section>
   );

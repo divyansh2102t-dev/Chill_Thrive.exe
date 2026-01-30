@@ -1,52 +1,55 @@
 import Link from 'next/link';
-import { FileSearch, Home, ChevronRight } from 'lucide-react';
+import { Home, ArrowRight } from 'lucide-react';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen w-full bg-white flex items-center justify-center p-6">
-      <div className="max-w-xl w-full text-center space-y-10">
+    <div className="min-h-screen w-full bg-white flex items-center justify-center p-6 font-sans">
+      <div className="max-w-2xl w-full text-center space-y-12">
         
-        {/* Large Visual 404 */}
-        <div className="relative inline-block">
-          <h1 className="text-[12rem] font-black text-slate-50 leading-none select-none">
-            404
+        {/* Logo / 404 Visual */}
+        <div className="space-y-4">
+          <h1 className="text-[120px] md:text-[180px] leading-none font-bold tracking-tighter text-black">
+            404<span className="text-[#289BD0]">.</span>
           </h1>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="bg-[#0A2540] p-5 rounded-3xl rotate-12 shadow-2xl shadow-blue-900/20">
-              <FileSearch size={48} className="text-white" />
-            </div>
+          <div className="flex justify-center items-center gap-2">
+            <span className="text-2xl font-bold tracking-tighter uppercase">
+              <span className="text-[#289BD0]">Chill</span> Thrive
+            </span>
           </div>
         </div>
 
         {/* Messaging */}
-        <div className="space-y-4">
-          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">
-            Lost in the digital void?
+        <div className="space-y-6">
+          <h2 className="text-4xl md:text-5xl font-bold text-black tracking-tight">
+            Lost in <span className="text-[#5DB4DB]">Recovery?</span>
           </h2>
-          <p className="text-slate-500 font-medium leading-relaxed max-w-sm mx-auto">
-            The page you're looking for doesn't exist or has been moved to a different coordinate.
+          <p className="text-gray-500 text-lg font-light max-w-sm mx-auto leading-relaxed">
+            This page has been moved or doesn't exist. Let's get you back to your session.
           </p>
         </div>
 
-        {/* Smart Navigation Links */}
-        <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 max-w-md mx-auto pt-4">
+        {/* Action Button */}
+        <div className="max-w-xs mx-auto pt-4">
           <Link 
             href="/"
-            className="group flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-slate-100 transition-all text-left"
+            className="group flex items-center justify-between p-6 bg-[#F9F9F9] rounded-[32px] hover:bg-[#F0F9FF] transition-all duration-500 border-2 border-transparent hover:border-[#289BD0]/20"
           >
-            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Homepage</p>
-              <p className="font-bold text-slate-700">Back to Start</p>
+            <div className="text-left">
+              <p className="text-[10px] font-black text-[#289BD0] uppercase tracking-[0.3em]">Return</p>
+              <p className="text-xl font-bold text-black">Back to Home</p>
             </div>
-            <Home size={18} className="text-slate-400 group-hover:text-[#0A2540] transition-colors" />
+            <div className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center group-hover:bg-[#289BD0] transition-colors duration-500">
+              <Home size={20} />
+            </div>
           </Link>
-
         </div>
 
         {/* Footer help */}
-        <p className="text-xs text-slate-400 font-medium">
-          Think this is a mistake? Contact our support team.
-        </p>
+        <div className="pt-12">
+          <p className="text-xs text-gray-300 font-bold uppercase tracking-[0.2em]">
+            Need help? Contact support
+          </p>
+        </div>
       </div>
     </div>
   );

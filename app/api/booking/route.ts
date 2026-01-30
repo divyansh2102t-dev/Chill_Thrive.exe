@@ -142,7 +142,7 @@ export async function POST(req: Request) {
                       <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 600; text-align: right;">${date}</td>
                     </tr>
                     <tr>
-                      <td style="padding: 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;">Time Slot</td>
+                      <td style="padding: 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;">Reporting Time</td>
                       <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 600; text-align: right;">${time.label} IST</td>
                     </tr>
                     <tr>
@@ -176,7 +176,7 @@ export async function POST(req: Request) {
                 </div>
 
                 <p style="color: #9CA3AF; font-size: 13px; line-height: 1.6; text-align: center; margin-top: 40px;">
-                  Please arrive 10 minutes early. Booked on: ${bookedAtIST}<br>
+                  Booked on: ${bookedAtIST}<br>
                   If you need to reschedule, reply to this email or contact us at ${process.env.GMAIL_USER}.
                 </p>
               </div>

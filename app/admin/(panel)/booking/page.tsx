@@ -200,7 +200,7 @@ export default function AdminBookings() {
                     <td className="p-5">
                       <div className="relative inline-block w-full min-w-[120px]">
                         <select 
-                          disabled={viewMode === 'archive'}
+                          // disabled={viewMode === 'archive'}
                           className={`w-full appearance-none text-[10px] font-black pl-3 pr-8 py-2.5 rounded-lg border-0 outline-none cursor-pointer transition-colors shadow-sm disabled:cursor-not-allowed ${
                             b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 
                             b.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'

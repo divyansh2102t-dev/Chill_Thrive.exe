@@ -103,7 +103,7 @@ function ServiceStep({ onSelect }: { onSelect: (data: { service: Service; durati
 
   return (
     <div className="space-y-12">
-      <h2 className="text-5xl font-bold tracking-tight text-center">Choose <span className="text-[#289BD0]">Recovery</span></h2>
+      <h2 className="text-5xl font-bold tracking-tight text-center">Choose</h2>
       <div className="grid grid-cols-1 gap-6 max-w-4xl mx-auto">
         {services.map((s) => {
           const durations = s.durationMinutes;
@@ -188,7 +188,7 @@ function DateTimeStep({ date, time, service, onBack, onNext }: any) {
 
   return (
     <div className="space-y-12">
-      <h2 className="text-5xl font-bold tracking-tight text-center">Pick a <span className="text-[#5DB4DB]">Slot</span></h2>
+      <h2 className="text-5xl font-bold tracking-tight text-center">Report Between</h2>
       <div className="flex flex-col lg:flex-row gap-12 items-start justify-center">
         <div className="bg-[#F9F9F9] p-8 rounded-[40px] shadow-sm">
           <Calendar
@@ -404,7 +404,7 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
   return (
     <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
       <div className="space-y-10">
-        <h2 className="text-4xl font-bold tracking-tight">Final <span className="text-[#289BD0]">Details</span></h2>
+        <h2 className="text-4xl font-bold tracking-tight">Details</h2>
         <div className="space-y-8">
           {['name', 'phone', 'email'].map((field) => (
             <div key={field} className="space-y-2">
@@ -550,8 +550,8 @@ export default function BookingClient() {
   return (
     <div className="bg-white min-h-screen font-sans pb-24">
       <FullPageLoader visible={loading} />
-      <h1 className="text-[82px] leading-none font-bold text-center pt-24 pb-12 tracking-tighter">
-        Book <span className="text-[#289BD0]">Now</span>
+      <h1 className="text-[82px] leading-none font-regular text-center pt-32 pb-24 tracking-tighter">
+        Booking <span className="text-[#5db4db]">In-progress</span>
       </h1>
       <ProgressBar step={step} total={3} />
       <div className="max-w-[1200px] mx-auto px-6">

@@ -81,7 +81,7 @@ const getEmbedUrl = (url: string | null) => {
         {/* HERO */}
         <section className="pt-24 pb-16 px-6 text-center">
           <div className="max-w-[1080px] mx-auto space-y-4">
-            <h1 className="text-[72px] md:text-[82px] leading-tight font-bold tracking-tight">
+            <h1 className="text-[72px] md:text-[82px] leading-tight font-regular tracking-tight">
               Real <span className="text-[#289BD0]">Results</span><br />
               Real <span className="text-[#5DB4DB]">Stories</span>
             </h1>

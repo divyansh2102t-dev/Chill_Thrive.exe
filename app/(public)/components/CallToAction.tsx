@@ -22,7 +22,7 @@ export default function CallToAction() {
           <Button
             size="lg"
             onClick={() => router.push("/services")}
-            className="bg-black hover:bg-[#289BD0] text-white px-10 py-8 rounded-2xl text-xl font-bold transition-all duration-300 shadow-xl shadow-black/5"
+            className="bg-black hover:bg-[#289BD0] text-white px-10 py-8 rounded-2xl text-xl font-bold transition-all duration-300"
           >
             Book a Session
           </Button>

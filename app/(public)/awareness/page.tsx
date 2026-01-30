@@ -50,20 +50,20 @@ export default function AwarenessPage() {
         { y: 0, opacity: 1, duration: 1, ease: "power4.out", stagger: 0.2 }
       );
 
-      // const sections = gsap.utils.toArray(".awareness-section");
-      // sections.forEach((section: any) => {
-      //   const internalGrid = section.querySelector(".section-grid");
-      //   gsap.from(internalGrid, {
-      //     y: 60,
-      //     opacity: 0,
-      //     duration: 1.2,
-      //     ease: "power3.out",
-      //     scrollTrigger: {
-      //       trigger: internalGrid,
-      //       start: "top 90%",
-      //     }
-      //   });
-      // });
+      const sections = gsap.utils.toArray(".awareness-section");
+      sections.forEach((section: any) => {
+        const internalGrid = section.querySelector(".section-grid");
+        gsap.from(internalGrid, {
+          y: 60,
+          opacity: 0,
+          duration: 1.2,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: internalGrid,
+            start: "top 90%",
+          }
+        });
+      });
     }, containerRef);
 
     return () => ctx.revert();
@@ -78,12 +78,12 @@ export default function AwarenessPage() {
         {/* HERO SECTION */}
         <section id="hero" className="h-screen flex flex-col items-center justify-center relative overflow-hidden px-6">
           <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
-            <h1 className="text-[30vw] font-black tracking-tighter">COLD</h1>
+            {/* <h1 className="text-[30vw] font-black tracking-tighter">COLD</h1> */}
           </div>
           
           {/* HEADER CONTENT LIMITED TO 960PX */}
           <div className="max-w-[960px] w-full text-center relative z-10 mx-auto">
-            <h1 className="hero-content text-[12vw] md:text-[8rem] font-bold leading-[0.85] tracking-tighter uppercase">
+            <h1 className="hero-content text-[12vw] md:text-[8rem] font-regular leading-[0.85] tracking-tighter uppercase">
               Cold <span className="text-[#289BD0]">Awareness</span>
             </h1>
             <p className="hero-content mt-8 text-xl md:text-2xl font-light text-gray-500 max-w-2xl mx-auto leading-relaxed">

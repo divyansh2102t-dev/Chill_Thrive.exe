@@ -58,7 +58,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       {/* HERO SECTION */}
       <section className="pt-24 pb-16 px-6 text-center">
         <div className="max-w-[1080px] mx-auto space-y-4">
-          <h1 className="text-[72px] md:text-[82px] leading-tight font-bold tracking-tight">
+          <h1 className="text-[72px] md:text-[82px] leading-tight font-regular tracking-tight">
             Get in <span className="text-[#289BD0]">Touch</span>
           </h1>
           <p className="text-xl md:text-2xl font-light text-gray-500 max-w-2xl mx-auto pt-4">

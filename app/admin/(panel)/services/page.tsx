@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
   Plus, Edit2, Trash2, Save, X, ToggleLeft, ToggleRight, 
-  Loader2, Layers, UploadCloud, PlayCircle, 
-  Tag, Info, CheckCircle2, Image as ImageIcon, MinusCircle,
-  Link2, Trash
+  Loader2, UploadCloud, PlayCircle, 
+  Tag, Info, Image as ImageIcon, MinusCircle,
+  Link2, Trash, Wifi
 } from 'lucide-react';
 
 /* ================= TYPES ================= */
@@ -18,7 +18,7 @@ interface Service {
   description: string;
   type: 'single' | 'combo';
   duration_minutes: number[];
-  prices: number[]; // Changed from price: number
+  prices: number[];
   benefits: string[];
   original_price?: number;
   currency: string;
@@ -38,8 +38,6 @@ export default function ServicesPage() {
   const [uploadingMedia, setUploadingMedia] = useState(false);
 
   const [newBenefit, setNewBenefit] = useState('');
-  
-  // UI state for adding new duration/price pairs
   const [tempDuration, setTempDuration] = useState<string>('');
   const [tempPrice, setTempPrice] = useState<string>('');
 
@@ -47,7 +45,7 @@ export default function ServicesPage() {
     title: '',
     slug: '',
     description: '',
-    prices: [], // Array to match durations
+    prices: [],
     duration_minutes: [], 
     type: 'single',
     benefits: [],
@@ -58,7 +56,31 @@ export default function ServicesPage() {
     is_active: true,
   });
 
-  useEffect(() => { fetchServices(); }, []);
+  useEffect(() => { 
+    fetchServices(); 
+    
+    /* ---------- REALTIME SUBSCRIPTION ---------- */
+    const channel = supabase
+      .channel('services-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'services' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setServices((prev) => [...prev, payload.new as Service].sort((a, b) => a.sort_order - b.sort_order));
+          } else if (payload.eventType === 'UPDATE') {
+            setServices((prev) =>
+              prev.map((s) => (s.id === payload.new.id ? (payload.new as Service) : s))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setServices((prev) => prev.filter((s) => s.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const fetchServices = async () => {
     setLoading(true);
@@ -95,7 +117,6 @@ export default function ServicesPage() {
     const d = parseInt(tempDuration);
     const p = parseFloat(tempPrice);
     if (isNaN(d) || isNaN(p)) return alert("Enter valid duration and price");
-    
     if (formData.duration_minutes.includes(d)) return alert("Duration already exists");
 
     setFormData({
@@ -132,6 +153,7 @@ export default function ServicesPage() {
     
     setIsSaving(true);
     const payload = { ...formData };
+    delete payload.created_at; // Ensure we don't try to update read-only fields
 
     const { error } = formData.id 
       ? await supabase.from('services').update(payload).eq('id', formData.id)
@@ -145,7 +167,7 @@ export default function ServicesPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this service?")) return;
     const { error } = await supabase.from('services').delete().eq('id', id);
-    if (!error) setServices((prev) => prev.filter((s) => s.id !== id));
+    if (error) alert("Delete failed");
   };
 
   const handleEditClick = (service: Service) => {
@@ -163,177 +185,190 @@ export default function ServicesPage() {
 
   const handleToggle = async (service: Service) => {
     const nextStatus = !service.is_active;
-    setServices(prev => prev.map(s => s.id === service.id ? { ...s, is_active: nextStatus } : s));
     const { error } = await supabase.from('services').update({ is_active: nextStatus }).eq('id', service.id);
-    if (error) {
-      alert("Toggle failed");
-      setServices(prev => prev.map(s => s.id === service.id ? { ...s, is_active: !nextStatus } : s));
-    }
+    if (error) alert("Toggle failed");
   };
 
-  if (loading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-indigo-600" size={48} /></div>;
+  if (loading) return <div className="flex h-screen items-center justify-center bg-white"><Loader2 className="animate-spin text-slate-900" size={32} /></div>;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-6 md:p-10">
-      <div className="max-w-7xl mx-auto space-y-10">
-        
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">Catalog Manager</h2>
-            <p className="text-slate-500 mt-1">Manage durations and dynamic pricing tiers</p>
+    <div className="min-h-screen bg-white p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
+      
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Catalog Manager</h1>
+            <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] font-bold rounded border border-emerald-100">
+              <Wifi size={10} /> LIVE
+            </span>
           </div>
-          {!isEditing && (
-            <button onClick={() => setIsEditing(true)} className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95">
-              <Plus size={20} /> New Service
-            </button>
-          )}
+          <p className="text-slate-400 font-medium text-xs mt-1 uppercase tracking-wider">Service & Pricing Architecture</p>
         </div>
-
-        {/* EDITOR PANEL */}
-        {isEditing && (
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-4">
-            <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
-              <h3 className="font-bold flex items-center gap-2"><Info size={18} className="text-indigo-400" /> {formData.id ? 'Modify Service' : 'Define New Service'}</h3>
-              <button onClick={resetForm} className="text-slate-400 hover:text-white transition-colors"><X size={24} /></button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-8 grid grid-cols-1 md:grid-cols-12 gap-8">
-              <div className="md:col-span-7 space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Service Title</label>
-                    <input required value={formData.title} onChange={e => handleTitleChange(e.target.value)} className="w-full p-3 bg-slate-50 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Type</label>
-                    <select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full p-3 border rounded-lg bg-white">
-                      <option value="single">Single</option>
-                      <option value="combo">Combo</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Description</label>
-                  <textarea rows={3} required value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full p-3 bg-slate-50 border rounded-lg outline-none" />
-                </div>
-
-                {/* DYNAMIC PRICING SECTION */}
-                <div className="space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                  <label className="text-xs font-bold text-slate-900 uppercase flex items-center gap-2">
-                    <Tag size={14} className="text-indigo-600"/> Pricing Tiers (Duration & Price)
-                  </label>
-                  
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <input type="number" placeholder="Mins (e.g. 30)" value={tempDuration} onChange={e => setTempDuration(e.target.value)} className="w-full p-3 border rounded-lg text-sm" />
-                    </div>
-                    <div className="flex-1">
-                      <input type="number" placeholder="Price (INR)" value={tempPrice} onChange={e => setTempPrice(e.target.value)} className="w-full p-3 border rounded-lg text-sm" />
-                    </div>
-                    <button type="button" onClick={addPricingTier} className="px-4 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700">Add</button>
-                  </div>
-
-                  <div className="space-y-2">
-                    {formData.duration_minutes.map((dur: number, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-lg border border-slate-200">
-                        <div className="flex items-center gap-4">
-                          <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md font-bold text-sm">{dur} Mins</span>
-                          <span className="font-bold text-slate-700">₹{formData.prices[idx]}</span>
-                        </div>
-                        <button type="button" onClick={() => removePricingTier(idx)} className="text-slate-300 hover:text-red-500"><Trash size={18}/></button>
-                      </div>
-                    ))}
-                    {formData.duration_minutes.length === 0 && <p className="text-xs text-slate-400 italic text-center py-2">No pricing tiers added yet</p>}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Key Benefits</label>
-                  <div className="flex gap-2">
-                    <input placeholder="Add benefit..." value={newBenefit} onChange={e => setNewBenefit(e.target.value)} className="flex-1 p-3 bg-slate-50 border rounded-lg outline-none" />
-                    <button type="button" onClick={addBenefit} className="px-4 bg-slate-900 text-white rounded-lg">Add</button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {formData.benefits.map((b: string, i: number) => (
-                      <span key={i} className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full text-sm font-semibold">
-                        {b} <button type="button" onClick={() => removeBenefit(i)}><MinusCircle size={16}/></button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="md:col-span-5 space-y-6">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Media</label>
-                  <div className="relative group aspect-video bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl overflow-hidden flex items-center justify-center">
-                    {formData.media_url ? (
-                      formData.media_type === 'video' ? <PlayCircle size={40} className="text-indigo-600"/> : <img src={formData.media_url} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="flex flex-col items-center"><UploadCloud size={40} className="text-slate-300" /><span className="mt-2 text-sm font-bold text-slate-400">Upload Media</span></div>
-                    )}
-                    <input type="file" accept="image/*,video/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    {uploadingMedia && <div className="absolute inset-0 bg-white/80 flex items-center justify-center"><Loader2 className="animate-spin text-indigo-600"/></div>}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><Link2 size={14} className="text-indigo-500" /> YouTube URL (Optional)</label>
-                  <input placeholder="https://youtube.com/..." value={formData.yt_url || ''} onChange={e => setFormData({ ...formData, yt_url: e.target.value })} className="w-full p-3 border rounded-lg text-sm" />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-10">
-                  <button type="button" onClick={resetForm} className="px-6 py-3 font-bold text-slate-600">Discard</button>
-                  <button disabled={isSaving || uploadingMedia} type="submit" className="flex items-center gap-2 px-10 py-3 bg-indigo-600 text-white font-bold rounded-xl">
-                    {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />} Save Service
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
+        {!isEditing && (
+          <button onClick={() => setIsEditing(true)} className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded transition-all active:scale-95">
+            <Plus size={16} /> New Service
+          </button>
         )}
+      </div>
 
-        {/* SERVICE GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map(service => (
-            <div key={service.id} className={`bg-white rounded-2xl overflow-hidden border border-slate-200 hover:shadow-xl transition-all ${!service.is_active && 'opacity-60'}`}>
-              <div className="relative h-48 bg-slate-900">
-                <img src={service.media_url} className="h-full w-full object-cover" />
-                <div className="absolute top-4 left-4"><span className="px-3 py-1 bg-sky-400 text-sky-900 rounded-full text-[10px] font-black">{service.type.toUpperCase()}</span></div>
+      {/* EDITOR PANEL */}
+      {isEditing && (
+        <div className="bg-white rounded border border-slate-200 overflow-hidden animate-in fade-in duration-300">
+          <div className="bg-slate-50 px-6 py-4 flex justify-between items-center border-b border-slate-200">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+              <Info size={14} /> {formData.id ? 'Modify Service' : 'Define New Service'}
+            </h3>
+            <button onClick={resetForm} className="text-slate-400 hover:text-slate-900 transition-colors"><X size={20} /></button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div className="md:col-span-7 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Service Title</label>
+                  <input required value={formData.title} onChange={e => handleTitleChange(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded outline-none focus:border-slate-900 text-xs font-bold uppercase" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Category Type</label>
+                  <select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full p-3 border border-slate-200 rounded bg-white text-xs font-bold uppercase outline-none">
+                    <option value="single">Single Service</option>
+                    <option value="combo">Combo Package</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="p-6 space-y-4">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-xl font-bold text-slate-800">{service.title}</h3>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-indigo-600">Starting from</div>
-                    <div className="text-xl font-black text-slate-900">₹{Math.min(...service.prices)}</div>
-                  </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Description</label>
+                <textarea rows={3} required value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full p-3 bg-white border border-slate-200 rounded outline-none focus:border-slate-900 text-xs font-medium" />
+              </div>
+
+              {/* DYNAMIC PRICING SECTION */}
+              <div className="space-y-4 p-4 bg-slate-50 border border-slate-200 rounded">
+                <label className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                  <Tag size={14}/> Pricing Matrix (Mins + INR)
+                </label>
+                
+                <div className="flex gap-2">
+                  <input type="number" placeholder="MINS" value={tempDuration} onChange={e => setTempDuration(e.target.value)} className="flex-1 p-3 border border-slate-200 rounded text-[11px] font-bold uppercase outline-none" />
+                  <input type="number" placeholder="PRICE" value={tempPrice} onChange={e => setTempPrice(e.target.value)} className="flex-1 p-3 border border-slate-200 rounded text-[11px] font-bold uppercase outline-none" />
+                  <button type="button" onClick={addPricingTier} className="px-5 bg-slate-900 text-white rounded text-[10px] font-black uppercase">Add</button>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {service.duration_minutes.map((m, i) => (
-                    <span key={i} className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">{m}m - ₹{service.prices[i]}</span>
+                <div className="space-y-1">
+                  {formData.duration_minutes.map((dur: number, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between bg-white p-3 border border-slate-200 rounded">
+                      <div className="flex items-center gap-4">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{dur} Mins</span>
+                        <span className="font-black text-slate-800 text-sm">₹{formData.prices[idx]}</span>
+                      </div>
+                      <button type="button" onClick={() => removePricingTier(idx)} className="text-slate-300 hover:text-red-500"><Trash size={16}/></button>
+                    </div>
                   ))}
                 </div>
+              </div>
 
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="flex gap-3">
-                    <button onClick={() => handleEditClick(service)} className="text-slate-400 hover:text-indigo-600"><Edit2 size={20} /></button>
-                    <button onClick={() => handleDelete(service.id)} className="text-slate-400 hover:text-red-500"><Trash2 size={20} /></button>
-                  </div>
-                  <button onClick={() => handleToggle(service)} className="flex items-center gap-1.5">
-                    <span className={`text-[10px] font-bold ${service.is_active ? 'text-green-600' : 'text-slate-400'}`}>{service.is_active ? 'LIVE' : 'HIDDEN'}</span>
-                    {service.is_active ? <ToggleRight size={24} className="text-green-500" /> : <ToggleLeft size={24} className="text-slate-300" />}
-                  </button>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Strategic Benefits</label>
+                <div className="flex gap-2">
+                  <input placeholder="ADD BENEFIT..." value={newBenefit} onChange={e => setNewBenefit(e.target.value)} className="flex-1 p-3 border border-slate-200 rounded text-[10px] font-bold uppercase outline-none focus:border-slate-900" />
+                  <button type="button" onClick={addBenefit} className="px-5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-[10px] font-black uppercase">Plus</button>
+                </div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {formData.benefits.map((b: string, i: number) => (
+                    <span key={i} className="inline-flex items-center gap-2 border border-slate-200 text-slate-600 px-3 py-1 rounded text-[9px] font-black uppercase">
+                      {b} <button type="button" onClick={() => removeBenefit(i)} className="hover:text-red-500"><MinusCircle size={12}/></button>
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
-          ))}
+
+            <div className="md:col-span-5 space-y-6">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Media Asset</label>
+                <div className="relative aspect-video bg-slate-50 border border-slate-200 rounded overflow-hidden flex items-center justify-center">
+                  {formData.media_url ? (
+                    formData.media_type === 'video' ? <PlayCircle size={32} className="text-slate-900"/> : <img src={formData.media_url} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <UploadCloud size={32} className="text-slate-200" />
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Drop Asset Here</span>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*,video/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                  {uploadingMedia && <div className="absolute inset-0 bg-white/80 flex items-center justify-center"><Loader2 className="animate-spin text-slate-900"/></div>}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Link2 size={12} /> External Video Link</label>
+                <input placeholder="YOUTUBE URL..." value={formData.yt_url || ''} onChange={e => setFormData({ ...formData, yt_url: e.target.value })} className="w-full p-3 border border-slate-200 rounded text-[10px] font-bold uppercase outline-none focus:border-slate-900" />
+              </div>
+
+              <div className="flex flex-col gap-2 pt-10">
+                <button disabled={isSaving || uploadingMedia} type="submit" className="w-full flex items-center justify-center gap-2 py-4 bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded">
+                  {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Update Database
+                </button>
+                <button type="button" onClick={resetForm} className="w-full py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900">Cancel Entry</button>
+              </div>
+            </div>
+          </form>
         </div>
+      )}
+
+      {/* SERVICE GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {services.map(service => (
+          <div key={service.id} className={`bg-white rounded border border-slate-200 overflow-hidden flex flex-col transition-all ${!service.is_active && 'opacity-60 grayscale'}`}>
+            <div className="relative h-44 bg-slate-100">
+              <img src={service.media_url} className="h-full w-full object-cover" />
+              <div className="absolute top-3 left-3">
+                <span className="px-2 py-1 bg-slate-900 text-white text-[9px] font-black tracking-widest uppercase rounded">
+                  {service.type}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-5 flex-1 flex flex-col">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight leading-tight">{service.title}</h3>
+                <div className="text-right">
+                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Starting from</div>
+                  <div className="text-lg font-black text-slate-900 leading-none">₹{Math.min(...service.prices)}</div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1 mb-6">
+                {service.duration_minutes.map((m, i) => (
+                  <span key={i} className="text-[8px] font-black border border-slate-100 text-slate-400 px-2 py-1 rounded uppercase">
+                    {m}m / ₹{service.prices[i]}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100">
+                <div className="flex gap-4">
+                  <button onClick={() => handleEditClick(service)} className="text-slate-300 hover:text-slate-900 transition-colors"><Edit2 size={16} /></button>
+                  <button onClick={() => handleDelete(service.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                </div>
+                <button onClick={() => handleToggle(service)} className="flex items-center gap-2 group">
+                  <span className={`text-[9px] font-black tracking-[0.1em] ${service.is_active ? 'text-emerald-500' : 'text-slate-300'}`}>
+                    {service.is_active ? 'ACTIVE' : 'HIDDEN'}
+                  </span>
+                  {service.is_active ? <ToggleRight size={20} className="text-emerald-500" /> : <ToggleLeft size={20} className="text-slate-300" />}
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
+      
+      {services.length === 0 && !loading && (
+        <div className="p-20 text-center border border-dashed border-slate-200 rounded">
+          <p className="text-slate-300 font-black uppercase text-[10px] tracking-[0.3em]">Catalog Empty</p>
+        </div>
+      )}
     </div>
   );
 }

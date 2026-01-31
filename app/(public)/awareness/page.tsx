@@ -6,8 +6,10 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import FullPageLoader from "@/components/FullPageLoader";
 import CallToAction from "../components/CallToAction";
+import Image from "next/image";
 
 gsap.registerPlugin(ScrollTrigger);
+
 
 type AwarenessSection = {
   id: string;
@@ -84,10 +86,10 @@ export default function AwarenessPage() {
           {/* HEADER CONTENT LIMITED TO 960PX */}
           <div className="max-w-[960px] w-full text-center relative z-10 mx-auto">
             <h1 className="hero-content text-[12vw] md:text-[8rem] font-regular leading-[0.85] tracking-tighter uppercase">
-              Cold <span className="text-[#289BD0]">Awareness</span>
+               <span className="text-[#289BD0]">Awareness</span>
             </h1>
             <p className="hero-content mt-8 text-xl md:text-2xl font-light text-gray-500 max-w-2xl mx-auto leading-relaxed">
-              Master the science and protocols of deliberate cold exposure. 
+            Cold or Hot Bath therapies improves recovery, reduces inflammation, and builds stress resilience when done safely. 
               <span className="block font-bold text-black mt-2">Recovery meets resilience.</span>
             </p>
           </div>
@@ -107,11 +109,18 @@ export default function AwarenessPage() {
               {/* Media Card */}
               <div className={`relative ${idx % 2 !== 0 ? 'lg:order-2' : ''}`}>
                 <div className="w-full aspect-[4/5] rounded-[48px] overflow-hidden bg-[#F9F9F9] group">
-                  <img
+                  {/* <img
                     src={section.media_url || "/image/blankimage.png"}
                     alt={section.title}
                     className="w-full h-full object-cover transition-transform duration-700"
-                  />
+                  /> */}
+
+                    <Image
+                      src={section.media_url || "/image/blankimage.png"}
+                      alt={`Awareness: ${section.title}`}
+                      fill
+                      className="w-full h-full object-cover rounded-[48px] transition-transform duration-700"
+                    />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-[48px] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
                 {/* Floating Index */}
@@ -140,7 +149,7 @@ export default function AwarenessPage() {
 
                 {/* Principles List */}
                 <div className="pt-4 space-y-4">
-                   <p className="text-[10px] uppercase tracking-[0.3em] font-black text-black">Core Principles</p>
+                   <h3 className="text-[10px] uppercase tracking-[0.3em] font-black text-black">Core Principles</h3>
                    <ul className="grid grid-cols-1 gap-3">
                     {section.benefits?.map((benefit, bIdx) => (
                       <li key={bIdx} className="flex items-center p-5 bg-[#F9F9F9] rounded-[20px] text-base font-medium transition-colors hover:bg-[#F0F9FF] border border-transparent hover:border-[#289BD0]/20">

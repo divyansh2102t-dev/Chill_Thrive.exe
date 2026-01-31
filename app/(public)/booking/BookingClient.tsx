@@ -148,7 +148,6 @@ function ServiceStep({ onSelect }: { onSelect: (data: { service: Service; durati
 }
 
 /*STEP 2: DATE/TIME */
-
 function DateTimeStep({ date, time, service, onBack, onNext }: any) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(date ?? new Date());
   const [selectedTime, setSelectedTime] = useState(time);
@@ -186,6 +185,30 @@ function DateTimeStep({ date, time, service, onBack, onNext }: any) {
     fetchSlots();
   }, [selectedDate, service]);
 
+  // Filter slots logic moved here so we can check length before rendering
+  const filteredSlots = slots.filter((slot) => {
+    if (!selectedDate) return false;
+    const now = new Date();
+    
+    // Get current Kolkata Time (HH:mm:ss)
+    const kolkataTime = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false,
+    }).format(now);
+
+    // Check if the user has selected "Today"
+    const isToday = formatLocalDate(selectedDate) === formatLocalDate(now);
+    
+    // If it's today, only show slots that haven't started yet
+    if (isToday) {
+      return slot.start_time > kolkataTime;
+    }
+    
+    // If it's a future date, show all slots
+    return true;
+  });
+
   return (
     <div className="space-y-12">
       <h2 className="text-5xl font-bold tracking-tight text-center">Select Reporting Time</h2>
@@ -221,11 +244,11 @@ function DateTimeStep({ date, time, service, onBack, onNext }: any) {
             {loading ? (
                <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#289BD0]" /></div>
             ) : !selectedDate ? (
-                <p className="text-center text-gray-400 py-10">Select a date to view available slots.</p>
-            ) : slots.length === 0 ? (
-               <p className="text-center text-gray-400 py-10">No availability for this date.</p>
+               <p className="text-center text-gray-400 py-10">Select a date to view available slots.</p>
+            ) : filteredSlots.length === 0 ? (
+               <p className="text-center text-gray-400 py-10">Slots not available for selected date.</p>
             ) : (
-              slots.map((slot) => {
+              filteredSlots.map((slot) => {
                 const label = `${slot.start_time.slice(0, 5)} - ${slot.end_time.slice(0, 5)}`;
                 const active = selectedTime?.slotId === slot.slot_id;
                 const isFull = slot.remaining_capacity <= 0;
@@ -274,9 +297,12 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  
+  // New state for field errors
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Refs for focusing
-  const phoneRef = import("react").then(() => null); // Just for type safety in logic below
+  const phoneRef = import("react").then(() => null); 
   const inputRefs = {
     phone: useRef<HTMLInputElement>(null),
     email: useRef<HTMLInputElement>(null),
@@ -375,7 +401,24 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
   };
 
   async function confirmBooking() {
-    if (form.phone.length !== 10) return alert("Please enter 10 digits mobile number.");
+    // 1. Validate Fields visually first
+    const newErrors: Record<string, string> = {};
+    if (!form.name.trim()) newErrors.name = "Name is required.";
+    
+    if (!form.phone.trim()) {
+        newErrors.phone = "Phone number is required.";
+    } else if (form.phone.length !== 10) {
+        newErrors.phone = "Please enter a valid 10-digit number.";
+    }
+
+    if (!form.email.trim()) newErrors.email = "Email is required.";
+
+    if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return; // Stop execution if there are validation errors
+    }
+
+    // 2. Logic Validation
     if (!isEmailVerified) return alert("Please verify your email first.");
 
     setSubmitting(true);
@@ -430,7 +473,9 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
         <div className="space-y-8">
           {['name', 'phone', 'email'].map((field) => (
             <div key={field} className="space-y-2">
-              <Label className="text-[10px] font-black tracking-widest uppercase text-gray-400">{field}</Label>
+              <Label className={`text-[10px] font-black tracking-widest uppercase ${errors[field] ? "text-red-500" : "text-gray-400"}`}>
+                {field}
+              </Label>
               <div className="relative">
                 <Input
                   ref={field === 'phone' ? inputRefs.phone : field === 'email' ? inputRefs.email : null}
@@ -446,14 +491,30 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
                     }
                   }}
                   onChange={(e) => {
+                    // Clear error when user types
+                    if (errors[field]) setErrors(prev => ({...prev, [field]: ""}));
+
                     if (field === 'phone') {
                       const val = e.target.value.replace(/\D/g, "");
                       if (val.length <= 10) setForm({ ...form, phone: val });
                     } else setForm({ ...form, [field]: e.target.value });
                   }}
-                  className="border-0 border-b-2 border-[#F9F9F9] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#289BD0] transition-colors bg-transparent text-xl h-12 w-full pr-20"
+                  // Conditional styling for error state
+                  className={`border-0 border-b-2 rounded-none px-0 focus-visible:ring-0 transition-colors bg-transparent text-xl h-12 w-full pr-20 
+                    ${errors[field] 
+                        ? "border-red-500 focus-visible:border-red-500" 
+                        : "border-[#F9F9F9] focus-visible:border-[#289BD0]"
+                    }`}
                 />
-                {field === 'email' && !isEmailVerified && (
+                
+                {/* Field specific visual error message */}
+                {errors[field] && (
+                    <p className="text-red-500 text-xs font-bold mt-1 animate-in slide-in-from-top-1">
+                        {errors[field]}
+                    </p>
+                )}
+
+                {field === 'email' && !isEmailVerified && !errors[field] && (
                   <button
                     onClick={handleSendOTP}
                     disabled={isVerifying || !form.email}
@@ -496,7 +557,7 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
           <div className="space-y-4">
             <Label className="text-[10px] font-black tracking-widest uppercase text-gray-400">Payment Method</Label>
             <div className="flex gap-4">
-              {['QR', 'CASH'].map(m => (
+              {['CASH', 'QR'].map(m => (
                 <button
                   key={m}
                   type="button"
@@ -530,9 +591,9 @@ function DetailsStep({ selection, date, time, form, setForm, onBack, onSuccess, 
             <span className="text-4xl font-light">₹{finalAmount}</span>
           </div>
           <Button
-            disabled={submitting || !form.name || !form.phone || !isEmailVerified}
+            disabled={submitting} // Removed the generic !form check so visual validation runs
             onClick={confirmBooking}
-            className="w-full bg-[#289BD0] hover:bg-black text-white h-16 rounded-2xl text-xl font-bold shadow-lg shadow-blue-200 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+            className="w-full bg-[#289BD0] hover:bg-black text-white h-16 rounded-2xl text-xl font-bold disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
           >
             {submitting ? <Loader2 className="animate-spin" /> :
               !isEmailVerified ? "Verify Email to Book" :
@@ -553,7 +614,7 @@ export default function BookingClient() {
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState<any>(null);
   const [pricing, setPricing] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", payment: "QR" as "QR" | "CASH" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", payment: "CASH" as "QR" | "CASH" });
   const [confirmed, setConfirmed] = useState<any>(null);
 
   useEffect(() => {

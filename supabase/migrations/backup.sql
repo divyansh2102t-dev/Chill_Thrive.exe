@@ -55,28 +55,26 @@ as $$
 begin
   return query
   with 
-  -- 1. Effective Defaults: 
-  -- We join on ID OR Start Time to ensure we catch "Added" exceptions that overlap defaults
+  -- 1. Effective Defaults (Standard or Modified)
   effective_defaults as (
     select 
       st.id as original_id,
-      -- Use Exception values if present, else Default
       coalesce(se.start_time, st.start_time) as final_start,
       coalesce(se.end_time, st.end_time) as final_end,
       coalesce(se.capacity, st.capacity) as final_cap,
       coalesce(se.is_blocked, false) as is_blocked,
       'default' as origin_type,
-      se.id as exception_id -- Track if an exception was used
+      se.id as exception_id,
+      0 as manual_booked_count -- Not used for defaults
     from slot_timings st
     left join schedule_exceptions se 
-      on (st.id = se.slot_id OR st.start_time = se.start_time) -- CRITICAL FIX: Match by time too
+      on (st.id = se.slot_id OR st.start_time = se.start_time)
       and se.exception_date = query_date
     where st.service_id = query_service_id
       and st.is_enabled = true
   ),
   
-  -- 2. Added Slots: 
-  -- Only select exceptions that did NOT match a default slot in step 1
+  -- 2. Added Slots (Pure Exceptions from Schedule Exception Table)
   added_slots as (
     select 
       se.id as original_id,
@@ -85,45 +83,57 @@ begin
       se.capacity as final_cap,
       false as is_blocked,
       'added' as origin_type,
-      null::uuid as exception_id
+      null::uuid as exception_id,
+      coalesce(se.slots_booked, 0) as manual_booked_count -- USES slots_booked parameter
     from schedule_exceptions se
     where se.service_id = query_service_id
       and se.exception_date = query_date
       and se.is_added = true
       and se.is_blocked = false
-      -- Exclude any exception that was already merged in effective_defaults
       and se.id not in (select exception_id from effective_defaults where exception_id is not null)
   ),
 
-  -- 3. Combine
+  -- 3. Combine both types
   all_active_slots as (
     select * from effective_defaults where is_blocked = false
     union all
     select * from added_slots
   ),
 
-  -- 4. Count Bookings
-  slot_booking_counts as (
+  -- 4. Count Bookings from Bookings Table (Only relevant for Standard slots)
+  standard_booking_counts as (
     select 
       b.slot_id, 
       count(*) as cnt
     from bookings b
     where b.booking_date = query_date 
       and b.status != 'cancelled'
+      and b.slot_id is not null
     group by b.slot_id
   )
 
-  -- 5. Final Output
+  -- 5. Final Calculation
   select 
     aas.original_id as slot_id,
     aas.final_start as start_time,
     aas.final_end as end_time,
     aas.final_cap as capacity,
-    coalesce(sbc.cnt, 0) as booked_count,
-    (aas.final_cap - coalesce(sbc.cnt, 0)) as remaining_capacity,
+    
+    -- LOGIC: If default, count bookings table. If added, use slots_booked column.
+    (case 
+      when aas.origin_type = 'default' then coalesce(sbc.cnt, 0)
+      else aas.manual_booked_count 
+    end)::bigint as booked_count,
+
+    -- LOGIC: Capacity minus the respective count source
+    (case 
+      when aas.origin_type = 'default' then (aas.final_cap - coalesce(sbc.cnt, 0))
+      else (aas.final_cap - aas.manual_booked_count)
+    end)::bigint as remaining_capacity,
+    
     aas.origin_type as source
   from all_active_slots aas
-  left join slot_booking_counts sbc on aas.original_id = sbc.slot_id
+  left join standard_booking_counts sbc on aas.original_id = sbc.slot_id
   order by aas.final_start asc;
 end;
 $$;
@@ -199,7 +209,7 @@ create table public.bookings (
   customer_email text not null,
   payment_method text not null,
   created_at timestamp without time zone null default now(),
-  slot_id uuid not null,
+  slot_id uuid null,
   duration_minutes integer not null,
   coupon_code text null,
   discount_amount numeric(10, 2) null default 0,
@@ -341,6 +351,7 @@ create table public.schedule_exceptions (
   start_time time without time zone null,
   end_time time without time zone null,
   capacity integer null,
+  slots_booked integer null default 0,
   constraint schedule_exceptions_pkey primary key (id),
   constraint schedule_exceptions_service_id_fkey foreign KEY (service_id) references services (id) on delete CASCADE,
   constraint schedule_exceptions_slot_id_fkey foreign KEY (slot_id) references slot_timings (id) on delete CASCADE,
@@ -425,3 +436,10 @@ create table public.testimonials (
   ),
   constraint testimonials_type_check check ((type = any (array['text'::text, 'video'::text])))
 ) TABLESPACE pg_default;
+
+
+-- Enable Realtime for bookings
+alter publication supabase_realtime add table bookings;
+
+-- Enable Realtime for services
+alter publication supabase_realtime add table services;

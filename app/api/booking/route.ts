@@ -46,13 +46,46 @@ export async function POST(req: Request) {
     // Parse the label "HH:MM - HH:MM" into separate strings for the DB
     const [startTime, endTime] = time.label.split(" - ").map((t: string) => `${t}:00`);
 
-
-    // FIX: Generate the current timestamp in ISO format with the Kolkata offset
+    // Generate the current timestamp in ISO format with the Kolkata offset
     const now = new Date();
     const kolkataOffset = 5.5 * 60 * 60 * 1000;
     const created_at_ist = new Date(now.getTime() + kolkataOffset).toISOString();
 
     const supabase = await createSupabaseServer();
+
+    /* ---------- SLOT ID LOGIC & EXCEPTION HANDLING ---------- */
+    
+    let validSlotId = slotId;
+
+    // 1. Check if this is a standard slot (exists in slot_timings)
+    const { data: timingExists } = await supabase
+      .from('slot_timings')
+      .select('id')
+      .eq('id', slotId)
+      .maybeSingle();
+
+    if (!timingExists) {
+      // It is NOT a standard slot. It is likely a Schedule Exception.
+      // We must set the Foreign Key to null for the bookings table.
+      validSlotId = null;
+
+      // 2. Check if it exists in schedule_exceptions
+      const { data: exceptionData } = await supabase
+        .from('schedule_exceptions')
+        .select('id, slots_booked')
+        .eq('id', slotId)
+        .maybeSingle();
+
+      // 3. If it is an exception, increment the booking count
+      if (exceptionData) {
+        const currentCount = exceptionData.slots_booked || 0;
+        
+        await supabase
+          .from('schedule_exceptions')
+          .update({ slots_booked: currentCount + 1 })
+          .eq('id', slotId);
+      }
+    }
 
     /* ---------- STORE BOOKING ---------- */
     const { data: booking, error: dbError } = await supabase
@@ -60,7 +93,7 @@ export async function POST(req: Request) {
     .insert({
       service_id: service.id,
       service_title: service.title,
-      slot_id: slotId,
+      slot_id: validSlotId, // Use the validated ID (either a real timing ID or null)
       duration_minutes: duration,
       booking_date: date,
       customer_name: name,
@@ -74,7 +107,6 @@ export async function POST(req: Request) {
       slot_start_time: startTime,
       slot_end_time: endTime,
       status: payment === "QR" ? "confirmed" : "pending",
-      // Overriding the default UTC timestamp with IST
       created_at: created_at_ist 
     })
     .select()
@@ -169,7 +201,7 @@ export async function POST(req: Request) {
                 </div>
 
                 <div style="margin-top: 32px; text-align: center;">
-                  <a href="http://maps.google.com" 
+                  <a href="https://maps.app.goo.gl/b5VbhqHDnyrceMeQ8" 
                      style="display: inline-block; background-color: #289BD0; color: #ffffff; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase;">
                     Get Directions →
                   </a>
@@ -196,6 +228,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, bookingId: booking.id });
   } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
   }
 }

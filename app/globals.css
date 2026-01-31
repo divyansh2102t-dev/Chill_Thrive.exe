@@ -196,3 +196,9 @@ body {
   animation: pulse 1.2s ease-in-out infinite;
   will-change: transform, opacity;
 }
+
+
+.no-js .hero-content {
+  opacity: 1;
+  transform: none;
+}

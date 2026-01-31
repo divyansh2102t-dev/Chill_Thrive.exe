@@ -6,11 +6,11 @@ import {
   Search, Trash2, Loader2, 
   IndianRupee, Phone, Mail, 
   ChevronDown, Calendar, Clock,
-  XCircle, CheckCircle2, Archive, History, Timer
+  XCircle, Archive, History, Timer, 
+  Wifi
 } from 'lucide-react';
 
 /* ---------- TYPES ---------- */
-
 interface Booking {
   id: string;
   created_at: string;
@@ -36,17 +36,11 @@ export default function AdminBookings() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'active' | 'cancelled' | 'archive'>('active');
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
-
-  /* ---------- UPDATED FETCH WITH CREATED_AT SORT ---------- */
   const fetchBookings = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('bookings')
       .select('*')
-      // Primary sort by the time the booking was MADE
       .order('created_at', { ascending: false });
     
     if (data) setBookings(data as Booking[]);
@@ -54,8 +48,34 @@ export default function AdminBookings() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    fetchBookings();
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setBookings((prev) => [payload.new as Booking, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setBookings((prev) =>
+              prev.map((b) => (b.id === payload.new.id ? (payload.new as Booking) : b))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setBookings((prev) => prev.filter((b) => b.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const updateStatus = async (id: string, status: Booking['status']) => {
-    setBookings(prev => prev.map(x => x.id === id ? { ...x, status } : x));
     const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
     if (error) {
       alert("Failed to update status");
@@ -65,7 +85,6 @@ export default function AdminBookings() {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Permanently delete this record?")) return;
-    setBookings(prev => prev.filter(b => b.id !== id));
     const { error } = await supabase.from('bookings').delete().eq('id', id);
     if (error) {
       alert("Error deleting record");
@@ -73,7 +92,6 @@ export default function AdminBookings() {
     }
   };
 
-  /* ---------- FILTERING LOGIC ---------- */
   const now = new Date();
   const localToday = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
     .toISOString()
@@ -85,36 +103,36 @@ export default function AdminBookings() {
       b.customer_phone.includes(searchTerm);
     
     const isPast = b.booking_date < localToday;
-
     let matchesView = false;
-    if (viewMode === 'archive') {
-      matchesView = isPast;
-    } else if (viewMode === 'cancelled') {
-      matchesView = !isPast && b.status === 'cancelled';
-    } else {
-      matchesView = !isPast && (b.status === 'pending' || b.status === 'confirmed');
-    }
+    if (viewMode === 'archive') matchesView = isPast;
+    else if (viewMode === 'cancelled') matchesView = !isPast && b.status === 'cancelled';
+    else matchesView = !isPast && (b.status === 'pending' || b.status === 'confirmed');
 
     return matchesSearch && matchesView;
   });
 
   if (loading) return (
-    <div className="flex h-screen items-center justify-center bg-slate-50">
-      <Loader2 className="animate-spin text-slate-900" size={40} />
+    <div className="flex h-screen items-center justify-center bg-white">
+      <Loader2 className="animate-spin text-slate-900" size={32} />
     </div>
   );
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 bg-white min-h-screen space-y-6 max-w-7xl mx-auto">
       
       {/* HEADER & TOGGLE */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Reservations</h1>
-          <p className="text-slate-500 font-medium text-sm">Review current, past, and cancelled bookings</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Reservations</h1>
+            <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] font-bold rounded border border-emerald-100">
+              <Wifi size={10} /> LIVE
+            </span>
+          </div>
+          <p className="text-slate-400 font-medium text-xs mt-1 uppercase tracking-wider">Management Portal</p>
         </div>
 
-        <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-full lg:w-auto overflow-x-auto">
+        <div className="flex bg-slate-50 p-1 rounded border border-slate-200 w-full lg:w-auto overflow-x-auto">
           {[
             { id: 'active', label: 'Active', icon: <Clock size={14}/> },
             { id: 'archive', label: 'Archive', icon: <Archive size={14}/> },
@@ -123,9 +141,9 @@ export default function AdminBookings() {
             <button 
               key={mode.id}
               onClick={() => setViewMode(mode.id as any)}
-              className={`flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-5 py-2 rounded text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
                 viewMode === mode.id 
-                  ? (mode.id === 'cancelled' ? 'bg-red-600 text-white shadow-md' : 'bg-[#0A2540] text-white shadow-md')
+                  ? 'bg-slate-900 text-white'
                   : 'text-slate-400 hover:text-slate-600'
               }`}
             >
@@ -136,74 +154,73 @@ export default function AdminBookings() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* SEARCH BAR */}
         <div className="relative">
-          <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input 
-            placeholder="Search by client name or phone..." 
-            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 transition-all shadow-sm font-medium"
+            placeholder="SEARCH BY CLIENT OR PHONE..." 
+            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded outline-none focus:border-slate-900 transition-all text-xs font-bold uppercase tracking-widest"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
         </div>
 
         {/* TABLE */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+        <div className="bg-white rounded border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-900 text-white">
-                  <th className="p-5 text-[10px] font-black uppercase tracking-widest">Client / Contact</th>
-                  <th className="p-5 text-[10px] font-black uppercase tracking-widest">Service & Time</th>
-                  <th className="p-5 text-[10px] font-black uppercase tracking-widest">Pricing</th>
-                  <th className="p-5 text-[10px] font-black uppercase tracking-widest">Status</th>
-                  <th className="p-5 text-[10px] font-black uppercase tracking-widest text-right">Action</th>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="p-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Client / Contact</th>
+                  <th className="p-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Service Details</th>
+                  <th className="p-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Pricing</th>
+                  <th className="p-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Status</th>
+                  <th className="p-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredBookings.map((b) => (
-                  <tr key={b.id} className={`hover:bg-slate-50 transition-colors ${viewMode !== 'active' && 'opacity-80'}`}>
-                    <td className="p-5">
-                      <div className="font-black text-slate-800 uppercase tracking-tighter text-lg">{b.customer_name}</div>
-                      <div className="flex flex-col gap-1 mt-1">
-                        <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5"><Mail size={12}/> {b.customer_email}</span>
-                        <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5"><Phone size={12}/> {b.customer_phone}</span>
-                        <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-widest flex items-center gap-1.5 mt-1">
-                          <History size={10}/> Booked: {new Date(b.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                  <tr key={b.id} className={`hover:bg-slate-50/50 transition-colors ${viewMode !== 'active' && 'opacity-75'}`}>
+                    <td className="p-4">
+                      <div className="font-black text-slate-800 uppercase tracking-tighter text-base">{b.customer_name}</div>
+                      <div className="flex flex-col gap-0.5 mt-1">
+                        <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1.5 uppercase tracking-wide"><Mail size={10}/> {b.customer_email}</span>
+                        <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1.5 uppercase tracking-wide"><Phone size={10}/> {b.customer_phone}</span>
+                        <span className="text-[9px] text-indigo-500 font-black uppercase tracking-widest flex items-center gap-1.5 mt-1">
+                          <History size={10}/> {new Date(b.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
                         </span>
                       </div>
                     </td>
-                    <td className="p-5">
-                      <div className="text-sm font-bold text-slate-700">{b.service_title}</div>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-black flex items-center gap-1">
+                    <td className="p-4">
+                      <div className="text-xs font-black text-slate-700 uppercase tracking-tight">{b.service_title}</div>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        <span className="border border-slate-200 text-slate-500 px-2 py-0.5 rounded text-[9px] font-black flex items-center gap-1 uppercase">
                            <Calendar size={10}/> {new Date(b.booking_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                         </span>
-                        <span className="bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-[10px] font-black flex items-center gap-1">
+                        <span className="bg-slate-900 text-white px-2 py-0.5 rounded text-[9px] font-black flex items-center gap-1 uppercase">
                            <Clock size={10}/> {b.slot_start_time?.slice(0, 5)} - {b.slot_end_time?.slice(0, 5)}
                         </span>
-                        <span className="bg-amber-50 text-amber-600 px-2 py-1 rounded text-[10px] font-black flex items-center gap-1">
+                        <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[9px] font-black flex items-center gap-1 uppercase">
                            <Timer size={10}/> {b.duration_minutes} MIN
                         </span>
                       </div>
                     </td>
-                    <td className="p-5">
-                      <div className="text-lg font-black text-slate-800 flex items-center gap-0.5">
-                        <IndianRupee size={16} strokeWidth={3} />
+                    <td className="p-4">
+                      <div className="text-base font-black text-slate-800 flex items-center gap-0.5">
+                        <IndianRupee size={14} strokeWidth={3} />
                         {b.final_amount}
                       </div>
-                      <div className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-tighter">
+                      <div className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">
                         {b.payment_method} {b.coupon_code && `· ${b.coupon_code}`}
                       </div>
                     </td>
-                    <td className="p-5">
+                    <td className="p-4">
                       <div className="relative inline-block w-full min-w-[120px]">
                         <select 
-                          // disabled={viewMode === 'archive'}
-                          className={`w-full appearance-none text-[10px] font-black pl-3 pr-8 py-2.5 rounded-lg border-0 outline-none cursor-pointer transition-colors shadow-sm disabled:cursor-not-allowed ${
-                            b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 
-                            b.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                          className={`w-full appearance-none text-[10px] font-black px-3 py-2 rounded border outline-none cursor-pointer transition-colors ${
+                            b.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                            b.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-red-50 text-red-700 border-red-200'
                           }`}
                           value={b.status}
                           onChange={e => updateStatus(b.id, e.target.value as any)}
@@ -212,15 +229,15 @@ export default function AdminBookings() {
                           <option value="confirmed">CONFIRMED</option>
                           <option value="cancelled">CANCELLED</option>
                         </select>
-                        <ChevronDown className="absolute right-2 top-3 pointer-events-none text-current opacity-50" size={12} />
+                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-current opacity-50" size={12} />
                       </div>
                     </td>
-                    <td className="p-5 text-right">
+                    <td className="p-4 text-right">
                       <button 
                         onClick={() => handleDelete(b.id)}
-                        className="p-2.5 hover:bg-red-50 text-red-400 hover:text-red-600 rounded-xl transition-all"
+                        className="p-2 hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   </tr>
@@ -229,11 +246,8 @@ export default function AdminBookings() {
             </table>
           </div>
           {filteredBookings.length === 0 && (
-            <div className="p-24 text-center">
-                <div className="inline-flex p-4 bg-slate-50 rounded-full mb-4">
-                    <History size={32} className="text-slate-300" />
-                </div>
-                <p className="text-slate-400 font-black uppercase text-xs tracking-[0.2em]">No records in {viewMode} list</p>
+            <div className="p-20 text-center">
+                <p className="text-slate-300 font-black uppercase text-[10px] tracking-[0.3em]">No records found</p>
             </div>
           )}
         </div>

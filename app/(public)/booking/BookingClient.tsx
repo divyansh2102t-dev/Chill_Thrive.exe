@@ -191,17 +191,29 @@ function DateTimeStep({ date, time, service, onBack, onNext }: any) {
       <h2 className="text-5xl font-bold tracking-tight text-center">Select Reporting Time</h2>
       <div className="flex flex-col lg:flex-row gap-12 items-start justify-center">
         <div className="bg-[#F9F9F9] p-8 rounded-[40px] shadow-sm">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            disabled={(d) => {
-                const isPast = d < new Date(new Date().setHours(0, 0, 0, 0));
-                const isBlocked = blockedDates.includes(formatLocalDate(d));
-                return isPast || isBlocked;
-            }}
-            className="rounded-md border-none"
-          />
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={setSelectedDate}
+          disabled={(d) => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // 1. Disable past dates
+            const isPast = d < today;
+
+            // 2. Disable dates beyond 3 months from today
+            const maxDate = new Date();
+            maxDate.setMonth(today.getMonth() + 3);
+            const isBeyondRange = d > maxDate;
+
+            // 3. Disable explicitly blocked dates from Supabase
+            const isBlocked = blockedDates.includes(formatLocalDate(d));
+
+            return isPast || isBeyondRange || isBlocked;
+          }}
+          className="rounded-md border-none"
+        />
         </div>
 
         <div className="flex-1 w-full max-w-md space-y-6">
